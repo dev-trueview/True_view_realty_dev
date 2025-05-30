@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Bed, Bath, Square } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface PropertyCardProps {
   property: {
@@ -21,26 +22,30 @@ interface PropertyCardProps {
 const PropertyCard = ({ property, onEnquiry }: PropertyCardProps) => {
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
-      <div className="relative">
-        <img
-          src={property.image}
-          alt={`Property in ${property.location}`}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-        <Badge className="absolute top-3 left-3 bg-blue-600">
-          {property.type}
-        </Badge>
-      </div>
+      <Link to={`/property/${property.id}`}>
+        <div className="relative">
+          <img
+            src={property.image}
+            alt={`Property in ${property.location}`}
+            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+          <Badge className="absolute top-3 left-3 bg-blue-600">
+            {property.type}
+          </Badge>
+        </div>
+      </Link>
       
       <CardContent className="p-4">
-        <div className="flex items-center text-gray-600 mb-2">
-          <MapPin className="w-4 h-4 mr-1" />
-          <span className="text-sm">{property.location}</span>
-        </div>
-        
-        <h3 className="font-bold text-xl text-gray-800 mb-2">
-          {property.price}
-        </h3>
+        <Link to={`/property/${property.id}`}>
+          <div className="flex items-center text-gray-600 mb-2">
+            <MapPin className="w-4 h-4 mr-1" />
+            <span className="text-sm">{property.location}</span>
+          </div>
+          
+          <h3 className="font-bold text-xl text-gray-800 mb-2 hover:text-blue-600 transition-colors">
+            {property.price}
+          </h3>
+        </Link>
         
         <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
           <div className="flex items-center">
