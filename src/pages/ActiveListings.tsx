@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,14 +7,15 @@ import { Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import PropertyCard from "@/components/PropertyCard";
+import PropertyDetailsModal from "@/components/PropertyDetailsModal";
 import EnquiryForm from "@/components/EnquiryForm";
 import Footer from "@/components/Footer";
 
 const ActiveListings = () => {
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
   const [searchLocation, setSearchLocation] = useState("");
-  const [priceRange, setPriceRange] = useState("");
   const [propertyType, setPropertyType] = useState("");
   const { toast } = useToast();
 
@@ -79,6 +79,26 @@ const ActiveListings = () => {
       bedrooms: 2,
       bathrooms: 2,
       sqft: 1600
+    },
+    {
+      id: 7,
+      image: "/placeholder.svg",
+      price: "$1,800,000 - $2,200,000",
+      location: "Los Angeles",
+      type: "Villa",
+      bedrooms: 6,
+      bathrooms: 5,
+      sqft: 4500
+    },
+    {
+      id: 8,
+      image: "/placeholder.svg",
+      price: "$425,000 - $525,000",
+      location: "Phoenix",
+      type: "Townhouse",
+      bedrooms: 3,
+      bathrooms: 2,
+      sqft: 1900
     }
   ];
 
@@ -93,8 +113,16 @@ const ActiveListings = () => {
     setShowEnquiryModal(true);
   };
 
+  const handleViewDetails = (property: any) => {
+    setSelectedProperty(property);
+    setShowDetailsModal(true);
+  };
+
   const handleFormSubmit = (formData: any) => {
-    console.log("Form submitted:", formData);
+    console.log("Property enquiry submitted:", formData);
+    // Set enquiry submitted flag in localStorage
+    localStorage.setItem('enquirySubmitted', 'true');
+    
     toast({
       title: "Enquiry Submitted Successfully!",
       description: "Our agent will contact you within 24 hours.",
@@ -108,17 +136,22 @@ const ActiveListings = () => {
       <Header />
       
       {/* Hero Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-800 mb-4">Active Property Listings</h1>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Discover your dream home from our carefully curated selection of premium properties.
-            </p>
-          </div>
+      <section className="py-16 bg-gradient-to-r from-blue-600 to-blue-800">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+            Active Property Listings
+          </h1>
+          <p className="text-xl text-blue-100 max-w-2xl mx-auto">
+            Discover your dream home from our curated collection of premium properties
+          </p>
+        </div>
+      </section>
 
-          {/* Search Section */}
+      {/* Search Section */}
+      <section className="py-12 bg-gray-50">
+        <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
+            <h2 className="text-2xl font-bold text-center mb-8 text-gray-800">Find Your Perfect Property</h2>
             <div className="flex flex-col md:flex-row gap-4 p-6 bg-white rounded-lg shadow-lg">
               <div className="flex-1">
                 <div className="relative">
@@ -130,19 +163,6 @@ const ActiveListings = () => {
                     className="pl-10"
                   />
                 </div>
-              </div>
-              <div className="flex-1">
-                <Select value={priceRange} onValueChange={setPriceRange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Price Range" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0-500k">$0 - $500K</SelectItem>
-                    <SelectItem value="500k-1m">$500K - $1M</SelectItem>
-                    <SelectItem value="1m-2m">$1M - $2M</SelectItem>
-                    <SelectItem value="2m+">$2M+</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
               <div className="flex-1">
                 <Select value={propertyType} onValueChange={setPropertyType}>
@@ -169,25 +189,44 @@ const ActiveListings = () => {
       {/* Properties Grid */}
       <section className="py-16">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl font-bold text-gray-800">
+              {filteredProperties.length} Properties Available
+            </h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProperties.map((property) => (
               <PropertyCard
                 key={property.id}
                 property={property}
                 onEnquiry={() => handleEnquiry(property)}
+                onViewDetails={() => handleViewDetails(property)}
               />
             ))}
           </div>
           
           {filteredProperties.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-600 text-lg">No properties found matching your criteria.</p>
+              <p className="text-gray-500 text-lg">No properties found matching your criteria.</p>
+              <p className="text-gray-400">Try adjusting your search filters.</p>
             </div>
           )}
         </div>
       </section>
 
       <Footer />
+
+      {/* Property Details Modal */}
+      <PropertyDetailsModal
+        isOpen={showDetailsModal}
+        onClose={() => setShowDetailsModal(false)}
+        onEnquiry={() => {
+          setShowDetailsModal(false);
+          handleEnquiry(selectedProperty);
+        }}
+        property={selectedProperty}
+      />
 
       {/* Enquiry Modal */}
       <Dialog open={showEnquiryModal} onOpenChange={setShowEnquiryModal}>

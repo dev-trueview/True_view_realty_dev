@@ -1,16 +1,14 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Search, MapPin, Phone, Mail, Star, CheckCircle, Users, Home as HomeIcon, DollarSign } from "lucide-react";
+import { Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import PropertyCarousel from "@/components/PropertyCarousel";
 import PropertyCard from "@/components/PropertyCard";
+import PropertyDetailsModal from "@/components/PropertyDetailsModal";
 import EnquiryForm from "@/components/EnquiryForm";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import WhyChooseUsSection from "@/components/WhyChooseUsSection";
@@ -19,20 +17,32 @@ import Footer from "@/components/Footer";
 const Index = () => {
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   const [showAutoPopup, setShowAutoPopup] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
   const [searchLocation, setSearchLocation] = useState("");
   const [priceRange, setPriceRange] = useState("");
   const [propertyType, setPropertyType] = useState("");
+  const [hasSubmittedEnquiry, setHasSubmittedEnquiry] = useState(false);
   const { toast } = useToast();
 
-  // Auto popup every minute
+  // Check localStorage for enquiry submission status
   useEffect(() => {
+    const enquirySubmitted = localStorage.getItem('enquirySubmitted');
+    if (enquirySubmitted === 'true') {
+      setHasSubmittedEnquiry(true);
+    }
+  }, []);
+
+  // Auto popup every minute (only if user hasn't submitted enquiry)
+  useEffect(() => {
+    if (hasSubmittedEnquiry) return;
+
     const interval = setInterval(() => {
       setShowAutoPopup(true);
     }, 60000); // 1 minute
 
     return () => clearInterval(interval);
-  }, []);
+  }, [hasSubmittedEnquiry]);
 
   const activeProperties = [
     {
@@ -100,7 +110,6 @@ const Index = () => {
   const filteredProperties = activeProperties.filter(property => {
     const matchesLocation = !searchLocation || property.location.toLowerCase().includes(searchLocation.toLowerCase());
     const matchesType = !propertyType || property.type === propertyType;
-    // Price filtering would need more sophisticated logic in a real app
     return matchesLocation && matchesType;
   });
 
@@ -109,8 +118,17 @@ const Index = () => {
     setShowEnquiryModal(true);
   };
 
+  const handleViewDetails = (property: any) => {
+    setSelectedProperty(property);
+    setShowDetailsModal(true);
+  };
+
   const handleFormSubmit = (formData: any) => {
     console.log("Form submitted:", formData);
+    // Set enquiry submitted flag in localStorage
+    localStorage.setItem('enquirySubmitted', 'true');
+    setHasSubmittedEnquiry(true);
+    
     toast({
       title: "Enquiry Submitted Successfully!",
       description: "Our agent will contact you within 24 hours.",
@@ -189,6 +207,7 @@ const Index = () => {
                 key={property.id}
                 property={property}
                 onEnquiry={() => handleEnquiry(property)}
+                onViewDetails={() => handleViewDetails(property)}
               />
             ))}
           </div>
@@ -203,6 +222,17 @@ const Index = () => {
 
       {/* Footer */}
       <Footer />
+
+      {/* Property Details Modal */}
+      <PropertyDetailsModal
+        isOpen={showDetailsModal}
+        onClose={() => setShowDetailsModal(false)}
+        onEnquiry={() => {
+          setShowDetailsModal(false);
+          handleEnquiry(selectedProperty);
+        }}
+        property={selectedProperty}
+      />
 
       {/* Enquiry Modal */}
       <Dialog open={showEnquiryModal} onOpenChange={setShowEnquiryModal}>

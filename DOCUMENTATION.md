@@ -4,27 +4,31 @@
 ## Table of Contents
 1. [Project Overview](#project-overview)
 2. [Technology Stack](#technology-stack)
-3. [Project Structure](#project-structure)
-4. [Pages Documentation](#pages-documentation)
-5. [Components Documentation](#components-documentation)
-6. [Features & Logic](#features--logic)
-7. [Styling & Design](#styling--design)
-8. [Data Models](#data-models)
-9. [User Interactions](#user-interactions)
-10. [Responsive Design](#responsive-design)
-11. [Future Enhancements](#future-enhancements)
+3. [Local Development Setup](#local-development-setup)
+4. [Project Structure](#project-structure)
+5. [Pages Documentation](#pages-documentation)
+6. [Components Documentation](#components-documentation)
+7. [Features & Logic](#features--logic)
+8. [User Interaction Tracking](#user-interaction-tracking)
+9. [Styling & Design](#styling--design)
+10. [Data Models](#data-models)
+11. [User Interactions](#user-interactions)
+12. [Responsive Design](#responsive-design)
+13. [Future Enhancements](#future-enhancements)
 
 ## Project Overview
 
-EliteHomes is a modern, responsive real estate website designed for property dealer agencies. The website provides a professional platform for showcasing properties, handling enquiries, and connecting potential buyers with real estate agents.
+EliteHomes is a modern, responsive real estate website designed for property dealer agencies. The website provides a professional platform for showcasing properties, handling enquiries, and connecting potential buyers with real estate agents. The application is fully environment-independent and can be run locally on any computer.
 
 ### Key Features
 - Dynamic property carousel with sold properties
 - Active property listings with filtering
-- Enquiry management system
-- Auto-popup functionality for lead generation
+- Property details displayed in modal popups
+- Enquiry management system with user tracking
+- Auto-popup functionality for lead generation (respects user preferences)
 - Professional responsive design
 - Complete navigation system
+- Environment-independent codebase
 
 ## Technology Stack
 
@@ -37,6 +41,70 @@ EliteHomes is a modern, responsive real estate website designed for property dea
 - **UI Components**: Radix UI primitives via shadcn/ui
 - **Notifications**: Toast system with Sonner
 - **Data Fetching**: TanStack React Query 5.56.2
+- **Local Storage**: Browser localStorage for user preferences
+
+## Local Development Setup
+
+### Prerequisites
+- Node.js (version 16 or higher)
+- npm (comes with Node.js)
+
+### Step-by-Step Installation
+
+1. **Download/Clone the Project**
+   ```bash
+   # If using Git
+   git clone <repository-url>
+   cd elitehomes-website
+   
+   # Or extract the downloaded ZIP file
+   ```
+
+2. **Install Dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Start Development Server**
+   ```bash
+   npm run dev
+   ```
+
+4. **Access the Application**
+   - Open your browser and navigate to `http://localhost:8080`
+   - The application will automatically reload when you make changes
+
+### Build for Production
+
+```bash
+# Create optimized production build
+npm run build
+
+# Preview production build locally
+npm run preview
+```
+
+### Environment Configuration
+
+The application is completely environment-independent and doesn't require:
+- External APIs
+- Database connections
+- Environment variables
+- Third-party services
+
+All data is stored locally using:
+- Static property data arrays
+- Browser localStorage for user preferences
+- Mock data for demonstrations
+
+### Available Scripts
+
+```bash
+npm run dev        # Start development server
+npm run build      # Build for production
+npm run preview    # Preview production build
+npm run lint       # Run ESLint
+```
 
 ## Project Structure
 
@@ -49,6 +117,7 @@ src/
 │   ├── Header.tsx       # Navigation header
 │   ├── PropertyCard.tsx # Property display card
 │   ├── PropertyCarousel.tsx # Hero carousel
+│   ├── PropertyDetailsModal.tsx # Property details popup
 │   ├── TestimonialsSection.tsx # Customer testimonials
 │   └── WhyChooseUsSection.tsx # Features section
 ├── pages/               # Route components
@@ -56,7 +125,6 @@ src/
 │   ├── ActiveListings.tsx # Property listings page
 │   ├── AboutUs.tsx      # Company information
 │   ├── Contact.tsx      # Contact page
-│   ├── PropertyDetails.tsx # Individual property page
 │   └── NotFound.tsx     # 404 error page
 ├── hooks/               # Custom React hooks
 └── App.tsx             # Main application component
@@ -66,12 +134,12 @@ src/
 
 ### 1. Homepage (Index.tsx)
 **Route**: `/`
-**File Size**: 241 lines (requires refactoring)
 
 #### Components Used
 - Header: Navigation component
 - PropertyCarousel: Hero section with sold properties
 - PropertyCard: Individual property display
+- PropertyDetailsModal: Property details popup
 - EnquiryForm: Contact form functionality
 - TestimonialsSection: Customer reviews
 - WhyChooseUsSection: Company features
@@ -81,40 +149,28 @@ src/
 ```typescript
 const [showEnquiryModal, setShowEnquiryModal] = useState(false);
 const [showAutoPopup, setShowAutoPopup] = useState(false);
+const [showDetailsModal, setShowDetailsModal] = useState(false);
 const [selectedProperty, setSelectedProperty] = useState<any>(null);
 const [searchLocation, setSearchLocation] = useState("");
 const [priceRange, setPriceRange] = useState("");
 const [propertyType, setPropertyType] = useState("");
+const [hasSubmittedEnquiry, setHasSubmittedEnquiry] = useState(false);
 ```
 
 #### Key Features
-- **Auto Popup System**: Displays enquiry form every 60 seconds
+- **Auto Popup System**: Displays enquiry form every 60 seconds (disabled after user submits enquiry)
 - **Property Search**: Location, price range, and type filtering
 - **Property Grid**: Displays 6 active properties
-- **Modal Management**: Handles enquiry form popups
-
-#### Data Structure
-Properties array contains:
-```typescript
-{
-  id: number;
-  image: string;
-  price: string;
-  location: string;
-  type: string;
-  bedrooms: number;
-  bathrooms: number;
-  sqft: number;
-}
-```
+- **Modal Management**: Handles enquiry form and property details popups
+- **User Tracking**: Tracks user enquiry submissions
 
 ### 2. Active Listings Page (ActiveListings.tsx)
 **Route**: `/active-listings`
-**File Size**: 210 lines (requires refactoring)
 
 #### Functionality
-- Displays all available properties
+- Displays all available properties (8 properties)
 - Advanced search and filtering
+- Property details modal integration
 - Enquiry form integration
 - Responsive property grid layout
 
@@ -128,37 +184,7 @@ const filteredProperties = activeProperties.filter(property => {
 });
 ```
 
-### 3. Property Details Page (PropertyDetails.tsx)
-**Route**: `/property/:id`
-**File Size**: 234 lines (requires refactoring)
-
-#### Features
-- Dynamic property loading based on URL parameter
-- Image gallery with main and thumbnail images
-- Detailed property statistics
-- Feature list display
-- Neighborhood information
-- Enquiry and viewing scheduling buttons
-
-#### Property Stats Display
-- Bedrooms count with bed icon
-- Bathrooms count with bath icon
-- Square footage with square icon
-- Year built with calendar icon
-
-#### Neighborhood Data
-```typescript
-neighborhood: {
-  walkScore: number;     // 0-100 rating
-  transitScore: number;  // 0-100 rating
-  bikeScore: number;     // 0-100 rating
-  schools: string;       // Quality rating
-  shopping: string;      // Quality rating
-  dining: string;        // Quality rating
-}
-```
-
-### 4. About Us Page (AboutUs.tsx)
+### 3. About Us Page (AboutUs.tsx)
 **Route**: `/about`
 
 #### Sections
@@ -167,17 +193,7 @@ neighborhood: {
 3. **Mission Statement**: Company values
 4. **Team Section**: Staff profiles
 
-#### Statistics Data
-```typescript
-const stats = [
-  { icon: Home, number: "500+", label: "Properties Sold" },
-  { icon: Users, number: "1000+", label: "Happy Clients" },
-  { icon: Award, number: "15+", label: "Years Experience" },
-  { icon: Star, number: "4.9", label: "Client Rating" }
-];
-```
-
-### 5. Contact Page (Contact.tsx)
+### 4. Contact Page (Contact.tsx)
 **Route**: `/contact`
 
 #### Features
@@ -186,79 +202,9 @@ const stats = [
 - Interactive map placeholder
 - Business benefits list
 
-#### Form Validation
-- Required fields: name, email, phone, message
-- Email format validation
-- Form submission with toast notification
-
 ## Components Documentation
 
-### 1. Header Component (Header.tsx)
-
-#### State Management
-```typescript
-const [isMenuOpen, setIsMenuOpen] = useState(false);
-```
-
-#### Navigation Items
-```typescript
-const navItems = [
-  { name: "Home", icon: Home, href: "/" },
-  { name: "Active Listings", icon: Building, href: "/active-listings" },
-  { name: "About Us", icon: Info, href: "/about" },
-  { name: "Contact", icon: Phone, href: "/contact" }
-];
-```
-
-#### Features
-- Sticky navigation (sticky top-0 z-50)
-- Mobile hamburger menu
-- Active route highlighting
-- Brand logo with home icon
-- Responsive design (hidden md:flex for desktop nav)
-
-#### Active Route Logic
-```typescript
-const isActiveRoute = (href: string) => {
-  if (href === "/") return location.pathname === "/";
-  return location.pathname.startsWith(href);
-};
-```
-
-### 2. PropertyCarousel Component (PropertyCarousel.tsx)
-
-#### Auto-Advance Logic
-```typescript
-useEffect(() => {
-  const interval = setInterval(() => {
-    setCurrentSlide((prev) => (prev + 1) % soldProperties.length);
-  }, 5000);
-  return () => clearInterval(interval);
-}, [soldProperties.length]);
-```
-
-#### Features
-- 5-second auto-advance
-- Manual navigation buttons
-- Dot indicators
-- "SOLD OUT" badge overlay
-- Gradient overlay for text readability
-
-#### Sold Properties Data
-```typescript
-const soldProperties = [
-  {
-    id: number;
-    image: string;
-    title: string;
-    location: string;
-    price: string;
-    description: string;
-  }
-];
-```
-
-### 3. PropertyCard Component (PropertyCard.tsx)
+### 1. PropertyCard Component (PropertyCard.tsx)
 
 #### Props Interface
 ```typescript
@@ -274,20 +220,50 @@ interface PropertyCardProps {
     sqft: number;
   };
   onEnquiry: () => void;
+  onViewDetails: () => void;
 }
 ```
 
 #### Features
-- Hover animations (hover:shadow-lg transition-all duration-300)
-- Image scaling on hover (group-hover:scale-105)
+- Hover animations and image scaling
 - Property type badge
 - Property statistics icons
 - "Get Enquiry" button
-- Link to property details page
+- Clickable areas for viewing details (opens modal instead of navigation)
 
-### 4. EnquiryForm Component (EnquiryForm.tsx)
+### 2. PropertyDetailsModal Component (PropertyDetailsModal.tsx)
 
-#### Form State
+#### Features
+- **Large Modal Display**: Full property information in popup
+- **Image Gallery**: Main image with thumbnail grid
+- **Property Statistics**: Bedrooms, bathrooms, sqft, year built
+- **Detailed Description**: Extended property information
+- **Features List**: Property amenities and features
+- **Neighborhood Information**: Walk score, transit, schools, etc.
+- **Action Buttons**: Get Enquiry and Schedule Viewing
+
+#### Extended Property Data
+```typescript
+const extendedProperty = {
+  ...property,
+  images: string[];
+  yearBuilt: number;
+  description: string;
+  features: string[];
+  neighborhood: {
+    walkScore: number;
+    transitScore: number;
+    bikeScore: number;
+    schools: string;
+    shopping: string;
+    dining: string;
+  };
+};
+```
+
+### 3. EnquiryForm Component (EnquiryForm.tsx)
+
+#### Form State & Validation
 ```typescript
 const [formData, setFormData] = useState({
   name: "",
@@ -298,170 +274,107 @@ const [formData, setFormData] = useState({
 const [errors, setErrors] = useState<any>({});
 ```
 
-#### Validation Logic
-```typescript
-const validateForm = () => {
-  const newErrors: any = {};
-  
-  if (!formData.name.trim()) {
-    newErrors.name = "Name is required";
-  }
-  
-  if (!formData.email.trim()) {
-    newErrors.email = "Email is required";
-  } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-    newErrors.email = "Email is invalid";
-  }
-  
-  if (!formData.phone.trim()) {
-    newErrors.phone = "Phone number is required";
-  } else if (!/^\d{10,}$/.test(formData.phone.replace(/\D/g, ''))) {
-    newErrors.phone = "Please enter a valid phone number";
-  }
-  
-  setErrors(newErrors);
-  return Object.keys(newErrors).length === 0;
-};
-```
-
 #### Features
 - Real-time validation
-- Error message display
 - Property context display
+- localStorage integration for tracking
 - Form reset on submission
 - Responsive design
 
-### 5. TestimonialsSection Component (TestimonialsSection.tsx)
-
-#### Testimonials Data Structure
-```typescript
-const testimonials = [
-  {
-    id: number;
-    name: string;
-    role: string;
-    content: string;
-    rating: number;
-    image: string;
-  }
-];
-```
-
-#### Features
-- Star rating display (1-5 stars)
-- Customer photos
-- Responsive grid layout
-- Hover effects
-
-### 6. WhyChooseUsSection Component (WhyChooseUsSection.tsx)
-
-#### Features Data
-```typescript
-const features = [
-  {
-    icon: LucideIcon;
-    title: string;
-    description: string;
-  }
-];
-```
-
-#### Available Features
-1. Verified Listings - CheckCircle icon
-2. Expert Agents - Users icon
-3. Easy Financing - DollarSign icon
-4. Secure Transactions - Shield icon
-5. 24/7 Support - Clock icon
-6. Award Winning - Award icon
-
-### 7. Footer Component (Footer.tsx)
-
-#### Sections
-1. **Company Info**: Logo, description, social media links
-2. **Quick Links**: Navigation menu
-3. **Contact Info**: Phone, email, address
-4. **Newsletter**: Email subscription form
-
-#### Social Media Icons
-- Facebook, Twitter, Instagram, LinkedIn
-- Hover color transitions
-
-#### Contact Information
-- Phone: +1 (555) 123-4567
-- Email: info@elitehomes.com
-- Address: 123 Real Estate Ave, City, State 12345
-
 ## Features & Logic
 
-### 1. Auto Popup System
+### 1. User Interaction Tracking
 
-#### Implementation
+#### Enquiry Submission Tracking
 ```typescript
+// Check localStorage for enquiry submission status
 useEffect(() => {
+  const enquirySubmitted = localStorage.getItem('enquirySubmitted');
+  if (enquirySubmitted === 'true') {
+    setHasSubmittedEnquiry(true);
+  }
+}, []);
+
+// Set flag on form submission
+const handleFormSubmit = (formData: any) => {
+  localStorage.setItem('enquirySubmitted', 'true');
+  setHasSubmittedEnquiry(true);
+  // ... rest of submission logic
+};
+```
+
+#### Auto Popup Logic (Respects User Preferences)
+```typescript
+// Auto popup every minute (only if user hasn't submitted enquiry)
+useEffect(() => {
+  if (hasSubmittedEnquiry) return;
+
   const interval = setInterval(() => {
     setShowAutoPopup(true);
   }, 60000); // 1 minute
+
   return () => clearInterval(interval);
-}, []);
+}, [hasSubmittedEnquiry]);
 ```
 
-#### Behavior
-- Appears every 60 seconds
-- Contains enquiry form
-- Promotional message: "Connect with our professional agent and find your dream home"
-- Can be dismissed by user
+### 2. Modal-Based Property Details
 
-### 2. Search and Filtering
+#### Implementation Benefits
+- **No Page Navigation**: Faster user experience
+- **Contextual Information**: User stays on current page
+- **Better Mobile Experience**: Smoother interactions on mobile devices
+- **State Preservation**: Search filters and scroll position maintained
 
-#### Search Fields
-- **Location**: Text input with case-insensitive matching
-- **Price Range**: Dropdown with predefined ranges
-- **Property Type**: Dropdown with available types
-
-#### Filter Logic
+#### Modal Triggers
 ```typescript
-const filteredProperties = activeProperties.filter(property => {
-  const matchesLocation = !searchLocation || 
-    property.location.toLowerCase().includes(searchLocation.toLowerCase());
-  const matchesType = !propertyType || property.type === propertyType;
-  return matchesLocation && matchesType;
-});
-```
+const handleViewDetails = (property: any) => {
+  setSelectedProperty(property);
+  setShowDetailsModal(true);
+};
 
-### 3. Form Handling
-
-#### Enquiry Form Submission
-```typescript
-const handleFormSubmit = (formData: any) => {
-  console.log("Form submitted:", formData);
-  toast({
-    title: "Enquiry Submitted Successfully!",
-    description: "Our agent will contact you within 24 hours.",
-  });
-  setShowEnquiryModal(false);
-  setSelectedProperty(null);
+const handleEnquiry = (property: any) => {
+  setSelectedProperty(property);
+  setShowEnquiryModal(true);
 };
 ```
 
-#### Toast Notifications
-- Success messages for form submissions
-- Error handling for validation failures
-- Auto-dismiss functionality
+### 3. Environment Independence
 
-### 4. Navigation Logic
+#### Local Data Storage
+- **Property Data**: Stored in component state arrays
+- **User Preferences**: Browser localStorage
+- **Form Submissions**: Console logging (easily replaceable with API calls)
 
-#### Route Protection
-- 404 page for invalid routes
-- Breadcrumb navigation on property details
-- Back button functionality
+#### No External Dependencies
+- **Images**: Uses placeholder.svg for all property images
+- **APIs**: No external API calls required
+- **Database**: No database connections needed
+- **Authentication**: Simple localStorage-based tracking
 
-#### Active Route Highlighting
+## User Interaction Tracking
+
+### localStorage Integration
+
+#### Data Stored
 ```typescript
-const isActiveRoute = (href: string) => {
-  if (href === "/") return location.pathname === "/";
-  return location.pathname.startsWith(href);
-};
+// User enquiry submission status
+localStorage.setItem('enquirySubmitted', 'true');
+const enquirySubmitted = localStorage.getItem('enquirySubmitted');
 ```
+
+#### Benefits
+- **Persistent User Preferences**: Survives browser sessions
+- **Auto-popup Control**: Prevents spam for users who already enquired
+- **Easy Implementation**: No backend required
+- **Privacy Compliant**: Only stores minimal user interaction data
+
+### User Experience Improvements
+
+#### Auto-popup Behavior
+1. **First Visit**: Popup appears after 1 minute
+2. **After Enquiry**: No more auto-popups for that user
+3. **Manual Triggers**: Users can still access enquiry forms manually
+4. **Session Persistence**: Preference maintained across browser sessions
 
 ## Styling & Design
 
@@ -472,21 +385,12 @@ const isActiveRoute = (href: string) => {
 - **Text**: Dark gray (#1f2937 - gray-800)
 - **Accent**: Green for sold properties (#22c55e - green-500)
 
-### 2. Typography
-- **Headings**: Bold, varying sizes (text-xl to text-4xl)
-- **Body Text**: Regular weight, gray-600 color
-- **Links**: Blue color with hover effects
-
-### 3. Layout Patterns
-- **Container**: `container mx-auto px-4`
-- **Grid**: Responsive grids (grid-cols-1 md:grid-cols-2 lg:grid-cols-3)
-- **Spacing**: Consistent padding and margins (py-16, mb-8, etc.)
-
-### 4. Animations
-- **Hover Effects**: scale, shadow, and color transitions
-- **Carousel**: Smooth slide transitions
-- **Modal**: Fade in/out animations
-- **Buttons**: Color and shadow transitions
+### 2. Modal Design
+- **Overlay**: Semi-transparent black backdrop
+- **Content**: White background with rounded corners
+- **Sizing**: Responsive (max-w-4xl for property details)
+- **Scrolling**: Vertical scroll for long content
+- **Animations**: Smooth fade in/out transitions
 
 ## Data Models
 
@@ -495,22 +399,22 @@ const isActiveRoute = (href: string) => {
 interface Property {
   id: number;
   image: string;
-  price: string;          // e.g., "$750,000 - $850,000"
-  location: string;       // e.g., "Downtown Seattle"
-  type: string;           // "Apartment", "Villa", "Condo", etc.
+  price: string;
+  location: string;
+  type: string;
   bedrooms: number;
   bathrooms: number;
   sqft: number;
 }
 ```
 
-### 2. Extended Property Interface (Details Page)
+### 2. Extended Property Interface (Modal Details)
 ```typescript
 interface PropertyDetails extends Property {
-  images: string[];       // Array of image URLs
+  images: string[];
   yearBuilt: number;
   description: string;
-  features: string[];     // Array of feature descriptions
+  features: string[];
   neighborhood: {
     walkScore: number;
     transitScore: number;
@@ -522,127 +426,105 @@ interface PropertyDetails extends Property {
 }
 ```
 
-### 3. Form Data Interface
-```typescript
-interface FormData {
-  name: string;
-  email: string;
-  phone: string;
-  message: string;
-  property?: string;      // Optional property context
-}
-```
-
-### 4. Navigation Item Interface
-```typescript
-interface NavItem {
-  name: string;
-  icon: LucideIcon;
-  href: string;
-}
-```
-
 ## User Interactions
 
-### 1. Property Browsing Flow
+### 1. Property Browsing Flow (Updated)
 1. User lands on homepage
 2. Views sold properties in carousel
 3. Browses active properties
 4. Uses search/filter to narrow results
-5. Clicks on property card
-6. Views detailed property information
-7. Submits enquiry or schedules viewing
+5. **Clicks on property card or image** → **Opens details modal**
+6. Views detailed property information in modal
+7. Clicks "Get Enquiry" → Opens enquiry form
+8. Submits enquiry → Auto-popup disabled for future visits
 
-### 2. Enquiry Process
-1. User clicks "Get Enquiry" button
-2. Modal opens with enquiry form
-3. User fills required fields (name, email, phone)
-4. Form validates input
-5. Success message displays
-6. Modal closes automatically
-7. Form data logged to console
-
-### 3. Auto Popup Interaction
-1. User visits website
-2. After 60 seconds, popup appears
-3. User can fill form or dismiss
-4. Popup reappears every minute if not submitted
-
-### 4. Navigation Experience
-1. User clicks navigation items
-2. Active route highlights
-3. Mobile users access hamburger menu
-4. Smooth transitions between pages
+### 2. Modal Interaction Flow
+1. **Property Card Click** → Property details modal opens
+2. **Modal Content**: Scrollable detailed information
+3. **Action Buttons**: Get Enquiry or Schedule Viewing
+4. **Modal Close**: Click outside, X button, or ESC key
+5. **Enquiry Button** → Closes details modal, opens enquiry modal
 
 ## Responsive Design
 
-### 1. Breakpoints
-- **Mobile**: Default styles (< 768px)
-- **Tablet**: md: prefix (≥ 768px)
-- **Desktop**: lg: prefix (≥ 1024px)
+### 1. Modal Responsiveness
+- **Mobile**: Full-width modals with vertical stacking
+- **Tablet**: Balanced layout with appropriate spacing
+- **Desktop**: Multi-column layouts with optimal viewing
 
-### 2. Mobile Adaptations
-- **Header**: Hamburger menu
-- **Grid**: Single column layout
-- **Search**: Stacked form fields
-- **Carousel**: Touch-friendly navigation
-- **Forms**: Full-width inputs
+### 2. Property Cards
+- **Mobile**: Single column grid
+- **Tablet**: 2-column grid
+- **Desktop**: 3-4 column grid depending on page
 
-### 3. Desktop Enhancements
-- **Header**: Horizontal navigation
-- **Grid**: Multi-column layouts
-- **Search**: Inline form fields
-- **Hover**: Enhanced interactions
+## Technical Implementation Details
+
+### 1. State Management
+- **Local State**: React hooks for component state
+- **Persistent State**: localStorage for user preferences
+- **Modal State**: Separate state variables for different modals
+
+### 2. Performance Considerations
+- **Modal Lazy Loading**: Content generated on-demand
+- **Image Optimization**: Placeholder images for consistent loading
+- **State Cleanup**: Proper cleanup of intervals and event listeners
+
+### 3. Error Handling
+- **Form Validation**: Real-time validation with user feedback
+- **localStorage Fallbacks**: Graceful handling of localStorage unavailability
+- **Modal Error States**: Proper error boundaries for modal content
 
 ## Future Enhancements
 
 ### 1. Backend Integration
-- Database for property storage
-- User authentication system
-- Enquiry management dashboard
-- Email notification system
+- Replace localStorage with user accounts
+- Property management dashboard
+- Real-time enquiry notifications
+- Email integration for form submissions
 
 ### 2. Advanced Features
-- Property comparison tool
-- Saved searches functionality
-- Agent assignment system
-- Virtual tour integration
-- Mortgage calculator
+- Property comparison in modals
+- Virtual tour integration within modals
+- Advanced filtering with instant results
+- Social sharing from property modals
 
 ### 3. Performance Optimizations
-- Image optimization and lazy loading
-- Code splitting for better performance
-- SEO improvements
-- Analytics integration
+- Image lazy loading and optimization
+- Modal content caching
+- Progressive web app features
+- SEO improvements for modal content
 
-### 4. Additional Functionality
-- Multi-language support
-- Advanced search filters
-- Property alerts/notifications
-- Social media integration
-- Blog/news section
+### 4. User Experience
+- Modal keyboard navigation
+- Touch gestures for mobile modals
+- Advanced user preference tracking
+- Personalized property recommendations
 
-## Technical Notes
+## Deployment Instructions
 
-### 1. State Management
-- Uses React hooks for local state
-- No global state management (Redux/Zustand not needed)
-- Form state managed independently in each component
+### 1. Local Development
+```bash
+npm install
+npm run dev
+```
 
-### 2. Error Handling
-- Form validation with user-friendly messages
-- Console logging for debugging
-- Toast notifications for user feedback
+### 2. Production Build
+```bash
+npm run build
+# Serve the 'dist' folder using any static file server
+```
 
-### 3. Performance Considerations
-- Component memoization not implemented (not needed for current scale)
-- Images use placeholder URLs (optimization needed for production)
-- Auto popup interval cleared on component unmount
+### 3. Static Hosting
+The built application can be deployed to:
+- Netlify
+- Vercel
+- GitHub Pages
+- Any static file hosting service
 
-### 4. Accessibility
-- Semantic HTML structure
-- Icon labels and alt text
-- Keyboard navigation support
-- Focus management in modals
+### 4. Server Requirements
+- **None**: Fully client-side application
+- **Web Server**: Any server capable of serving static files
+- **Database**: Not required (uses localStorage)
+- **APIs**: Not required (self-contained)
 
-This documentation covers all aspects of the EliteHomes real estate website, providing detailed information about every component, feature, and piece of logic implemented in the codebase.
+This documentation covers all aspects of the updated EliteHomes real estate website, including the new modal-based property details system, user interaction tracking, and complete local development setup instructions.
