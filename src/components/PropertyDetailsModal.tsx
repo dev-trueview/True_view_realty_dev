@@ -18,10 +18,15 @@ interface PropertyDetailsModalProps {
     bedrooms: number;
     bathrooms: number;
     sqft: number;
-  };
+  } | null;
 }
 
 const PropertyDetailsModal = ({ isOpen, onClose, onEnquiry, property }: PropertyDetailsModalProps) => {
+  // Early return if property is null
+  if (!property) {
+    return null;
+  }
+
   // Extended property data for modal
   const extendedProperty = {
     ...property,
