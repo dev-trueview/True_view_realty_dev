@@ -45,15 +45,15 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Phone className="w-5 h-5 text-cyan-400" />
-                <span className="text-gray-300">+1 (555) TRUE-VIEW</span>
+                <span className="text-gray-300"> 7721873487 </span>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="w-5 h-5 text-cyan-400" />
-                <span className="text-gray-300">info@trueviewreality.com</span>
+                <span className="text-gray-300">TrueViewrealty.in@gmail.com</span>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin className="w-5 h-5 text-cyan-400" />
-                <span className="text-gray-300">123 Reality View Ave, TrueView Plaza, NY 10001</span>
+                <span className="text-gray-300">TrueView Reality pune</span>
               </div>
             </div>
           </div>
