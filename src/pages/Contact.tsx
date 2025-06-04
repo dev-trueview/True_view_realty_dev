@@ -22,22 +22,22 @@ const Contact = () => {
     {
       icon: MapPin,
       title: "Office Address",
-      details: "123 Real Estate Ave, Downtown City, NY 10001"
+      details: "123 Reality View Ave, TrueView Plaza, NY 10001"
     },
     {
       icon: Phone,
       title: "Phone Number",
-      details: "+1 (555) 123-4567"
+      details: "+1 (555) TRUE-VIEW"
     },
     {
       icon: Mail,
       title: "Email Address",
-      details: "info@elitehomes.com"
+      details: "info@trueviewreality.com"
     },
     {
       icon: Clock,
       title: "Business Hours",
-      details: "Mon - Fri: 9AM - 6PM, Sat: 10AM - 4PM"
+      details: "Mon - Fri: 9AM - 7PM, Sat: 10AM - 5PM"
     }
   ];
 
@@ -59,16 +59,18 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <Header />
       
       {/* Hero Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-pink-500/10 backdrop-blur-sm">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-800 mb-4">Contact Us</h1>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Ready to find your dream home? Get in touch with our expert team today.
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">
+              Contact TrueView Reality
+            </h1>
+            <p className="text-gray-300 max-w-2xl mx-auto text-lg">
+              Ready to find your dream home? Connect with our expert team and experience the future of real estate.
             </p>
           </div>
         </div>
@@ -79,13 +81,13 @@ const Contact = () => {
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
             {contactInfo.map((info, index) => (
-              <Card key={index} className="text-center">
+              <Card key={index} className="text-center bg-gradient-to-br from-slate-800/50 to-slate-900/50 border-cyan-500/20 backdrop-blur-sm hover:border-cyan-400/40 transition-all duration-300 transform hover:scale-105">
                 <CardContent className="p-6">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <info.icon className="w-8 h-8 text-blue-600" />
+                  <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-cyan-500/25">
+                    <info.icon className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">{info.title}</h3>
-                  <p className="text-gray-600 text-sm">{info.details}</p>
+                  <h3 className="text-lg font-semibold text-white mb-2">{info.title}</h3>
+                  <p className="text-gray-300 text-sm">{info.details}</p>
                 </CardContent>
               </Card>
             ))}
@@ -93,8 +95,10 @@ const Contact = () => {
 
           <div className="grid lg:grid-cols-2 gap-12">
             {/* Contact Form */}
-            <div>
-              <h2 className="text-3xl font-bold text-gray-800 mb-6">Send us a Message</h2>
+            <div className="bg-gradient-to-br from-slate-800/30 to-slate-900/30 backdrop-blur-sm rounded-2xl p-8 border border-cyan-500/20">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mb-6">
+                Send us a Message
+              </h2>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <Input
@@ -103,7 +107,7 @@ const Contact = () => {
                     value={formData.name}
                     onChange={handleInputChange}
                     required
-                    className="w-full"
+                    className="w-full bg-slate-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20"
                   />
                 </div>
                 <div>
@@ -114,7 +118,7 @@ const Contact = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     required
-                    className="w-full"
+                    className="w-full bg-slate-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20"
                   />
                 </div>
                 <div>
@@ -125,7 +129,7 @@ const Contact = () => {
                     value={formData.phone}
                     onChange={handleInputChange}
                     required
-                    className="w-full"
+                    className="w-full bg-slate-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20"
                   />
                 </div>
                 <div>
@@ -135,10 +139,10 @@ const Contact = () => {
                     value={formData.message}
                     onChange={handleInputChange}
                     required
-                    className="w-full min-h-[120px]"
+                    className="w-full min-h-[120px] bg-slate-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20"
                   />
                 </div>
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
+                <Button type="submit" className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white font-semibold py-3 rounded-lg transition-all duration-300 shadow-lg shadow-cyan-500/25">
                   Send Message
                 </Button>
               </form>
@@ -146,29 +150,31 @@ const Contact = () => {
 
             {/* Map/Additional Info */}
             <div>
-              <h2 className="text-3xl font-bold text-gray-800 mb-6">Visit Our Office</h2>
-              <div className="bg-gray-100 rounded-lg h-64 mb-6 flex items-center justify-center">
-                <p className="text-gray-600">Interactive Map Placeholder</p>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mb-6">
+                Visit Our Office
+              </h2>
+              <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-lg h-64 mb-6 flex items-center justify-center border border-cyan-500/20">
+                <p className="text-gray-300">Interactive Map Coming Soon</p>
               </div>
-              <Card>
+              <Card className="bg-gradient-to-br from-slate-800/30 to-slate-900/30 backdrop-blur-sm border-cyan-500/20">
                 <CardContent className="p-6">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4">Why Contact Us?</h3>
-                  <ul className="space-y-3 text-gray-600">
+                  <h3 className="text-xl font-semibold text-white mb-4">Why Choose TrueView Reality?</h3>
+                  <ul className="space-y-3 text-gray-300">
                     <li className="flex items-start">
-                      <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                      Free property consultation and market analysis
+                      <span className="w-2 h-2 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                      Advanced property analysis with AI-powered insights
                     </li>
                     <li className="flex items-start">
-                      <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                      Expert guidance throughout the buying/selling process
+                      <span className="w-2 h-2 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                      Virtual reality property tours and 3D walkthroughs
                     </li>
                     <li className="flex items-start">
-                      <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                      Access to exclusive property listings
+                      <span className="w-2 h-2 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                      Exclusive access to premium property listings
                     </li>
                     <li className="flex items-start">
-                      <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                      Personalized service tailored to your needs
+                      <span className="w-2 h-2 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                      24/7 personalized customer support
                     </li>
                   </ul>
                 </CardContent>
