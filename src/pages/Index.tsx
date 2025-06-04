@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import EnquiryForm from "@/components/EnquiryForm";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import WhyChooseUsSection from "@/components/WhyChooseUsSection";
 import Footer from "@/components/Footer";
+import { useProperties } from "@/hooks/useProperties";
 
 const Index = () => {
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
@@ -24,6 +26,9 @@ const Index = () => {
   const [propertyType, setPropertyType] = useState("");
   const [hasSubmittedEnquiry, setHasSubmittedEnquiry] = useState(false);
   const { toast } = useToast();
+
+  // Use the custom hook to fetch properties from database
+  const { properties, loading, error } = useProperties();
 
   // Check localStorage for enquiry submission status
   useEffect(() => {
@@ -44,70 +49,7 @@ const Index = () => {
     return () => clearInterval(interval);
   }, [hasSubmittedEnquiry]);
 
-  const activeProperties = [
-    {
-      id: 1,
-      image: "/placeholder.svg",
-      price: "$750,000 - $850,000",
-      location: "Downtown Seattle",
-      type: "Apartment",
-      bedrooms: 3,
-      bathrooms: 2,
-      sqft: 1800
-    },
-    {
-      id: 2,
-      image: "/placeholder.svg", 
-      price: "$1,200,000 - $1,400,000",
-      location: "Beverly Hills",
-      type: "Villa",
-      bedrooms: 5,
-      bathrooms: 4,
-      sqft: 3200
-    },
-    {
-      id: 3,
-      image: "/placeholder.svg",
-      price: "$450,000 - $550,000",
-      location: "Austin Texas",
-      type: "Condo",
-      bedrooms: 2,
-      bathrooms: 2,
-      sqft: 1200
-    },
-    {
-      id: 4,
-      image: "/placeholder.svg",
-      price: "$2,100,000 - $2,500,000",
-      location: "Manhattan NYC",
-      type: "Penthouse",
-      bedrooms: 4,
-      bathrooms: 3,
-      sqft: 2800
-    },
-    {
-      id: 5,
-      image: "/placeholder.svg",
-      price: "$650,000 - $750,000",
-      location: "San Francisco",
-      type: "Townhouse",
-      bedrooms: 3,
-      bathrooms: 2.5,
-      sqft: 2100
-    },
-    {
-      id: 6,
-      image: "/placeholder.svg",
-      price: "$900,000 - $1,100,000",
-      location: "Miami Beach",
-      type: "Condo",
-      bedrooms: 2,
-      bathrooms: 2,
-      sqft: 1600
-    }
-  ];
-
-  const filteredProperties = activeProperties.filter(property => {
+  const filteredProperties = properties.filter(property => {
     const matchesLocation = !searchLocation || property.location.toLowerCase().includes(searchLocation.toLowerCase());
     const matchesType = !propertyType || property.type === propertyType;
     return matchesLocation && matchesType;
@@ -125,7 +67,6 @@ const Index = () => {
 
   const handleFormSubmit = (formData: any) => {
     console.log("Form submitted:", formData);
-    // Set enquiry submitted flag in localStorage
     localStorage.setItem('enquirySubmitted', 'true');
     setHasSubmittedEnquiry(true);
     
@@ -138,19 +79,47 @@ const Index = () => {
     setSelectedProperty(null);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
+        <Header />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-lg text-gray-600">Loading properties...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
+        <Header />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <p className="text-lg text-red-600 mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()}>Retry</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
       <Header />
       
       {/* Hero Carousel */}
       <PropertyCarousel />
 
       {/* Search Section */}
-      <section className="py-12 bg-gray-50">
+      <section className="py-12 bg-gradient-to-r from-purple-100 to-blue-100">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-8 text-gray-800">Find Your Perfect Property</h2>
-            <div className="flex flex-col md:flex-row gap-4 p-6 bg-white rounded-lg shadow-lg">
+            <div className="flex flex-col md:flex-row gap-4 p-6 bg-white rounded-lg shadow-lg card-gradient">
               <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -189,7 +158,7 @@ const Index = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <Button className="bg-blue-600 hover:bg-blue-700 px-8">
+              <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 px-8">
                 Search
               </Button>
             </div>
@@ -211,6 +180,12 @@ const Index = () => {
               />
             ))}
           </div>
+          {filteredProperties.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">No properties found matching your criteria.</p>
+              <p className="text-gray-400">Try adjusting your search filters.</p>
+            </div>
+          )}
         </div>
       </section>
 

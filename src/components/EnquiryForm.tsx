@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { X } from "lucide-react";
+import { databaseAPI } from "@/utils/database";
 
 interface EnquiryFormProps {
   property?: any;
@@ -20,6 +20,7 @@ const EnquiryForm = ({ property, onSubmit, onClose }: EnquiryFormProps) => {
     message: ""
   });
   const [errors, setErrors] = useState<any>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateForm = () => {
     const newErrors: any = {};
@@ -44,15 +45,33 @@ const EnquiryForm = ({ property, onSubmit, onClose }: EnquiryFormProps) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (validateForm()) {
-      onSubmit({
+    if (!validateForm()) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      const enquiryData = {
         ...formData,
         property: property?.location || "General Enquiry"
-      });
-      setFormData({ name: "", email: "", phone: "", message: "" });
+      };
+      
+      // Submit to database
+      const success = await databaseAPI.submitEnquiry(enquiryData);
+      
+      if (success) {
+        onSubmit(enquiryData);
+        setFormData({ name: "", email: "", phone: "", message: "" });
+      } else {
+        throw new Error('Failed to submit enquiry');
+      }
+    } catch (error) {
+      console.error('Error submitting enquiry:', error);
+      setErrors({ submit: 'Failed to submit enquiry. Please try again.' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -66,8 +85,8 @@ const EnquiryForm = ({ property, onSubmit, onClose }: EnquiryFormProps) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {property && (
-        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-          <p className="text-sm text-blue-800">
+        <div className="mb-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+          <p className="text-sm text-purple-800">
             Enquiry for: <strong>{property.location}</strong> - {property.price}
           </p>
         </div>
@@ -82,6 +101,7 @@ const EnquiryForm = ({ property, onSubmit, onClose }: EnquiryFormProps) => {
           onChange={(e) => handleChange("name", e.target.value)}
           className={errors.name ? "border-red-500" : ""}
           placeholder="Enter your full name"
+          disabled={isSubmitting}
         />
         {errors.name && <span className="text-red-500 text-sm">{errors.name}</span>}
       </div>
@@ -95,6 +115,7 @@ const EnquiryForm = ({ property, onSubmit, onClose }: EnquiryFormProps) => {
           onChange={(e) => handleChange("email", e.target.value)}
           className={errors.email ? "border-red-500" : ""}
           placeholder="Enter your email"
+          disabled={isSubmitting}
         />
         {errors.email && <span className="text-red-500 text-sm">{errors.email}</span>}
       </div>
@@ -108,6 +129,7 @@ const EnquiryForm = ({ property, onSubmit, onClose }: EnquiryFormProps) => {
           onChange={(e) => handleChange("phone", e.target.value)}
           className={errors.phone ? "border-red-500" : ""}
           placeholder="Enter your phone number"
+          disabled={isSubmitting}
         />
         {errors.phone && <span className="text-red-500 text-sm">{errors.phone}</span>}
       </div>
@@ -120,8 +142,13 @@ const EnquiryForm = ({ property, onSubmit, onClose }: EnquiryFormProps) => {
           onChange={(e) => handleChange("message", e.target.value)}
           placeholder="Any specific requirements or questions..."
           rows={3}
+          disabled={isSubmitting}
         />
       </div>
+      
+      {errors.submit && (
+        <div className="text-red-500 text-sm">{errors.submit}</div>
+      )}
       
       <div className="flex gap-3 pt-4">
         <Button
@@ -129,14 +156,16 @@ const EnquiryForm = ({ property, onSubmit, onClose }: EnquiryFormProps) => {
           variant="outline"
           onClick={onClose}
           className="flex-1"
+          disabled={isSubmitting}
         >
           Cancel
         </Button>
         <Button
           type="submit"
-          className="flex-1 bg-blue-600 hover:bg-blue-700"
+          className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+          disabled={isSubmitting}
         >
-          Submit Enquiry
+          {isSubmitting ? 'Submitting...' : 'Submit Enquiry'}
         </Button>
       </div>
     </form>

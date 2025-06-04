@@ -21,15 +21,15 @@ const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white shadow-md">
+    <header className="sticky top-0 z-50 bg-gradient-to-r from-purple-900 via-blue-900 to-indigo-900 shadow-xl">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center">
               <Home className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-800">EliteHomes</span>
+            <span className="text-xl font-bold text-white">TrueView Reality</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -40,8 +40,8 @@ const Header = () => {
                 to={item.href}
                 className={`flex items-center space-x-1 transition-colors duration-200 ${
                   isActiveRoute(item.href)
-                    ? "text-blue-600 font-medium"
-                    : "text-gray-600 hover:text-blue-600"
+                    ? "text-yellow-400 font-medium"
+                    : "text-gray-200 hover:text-yellow-400"
                 }`}
               >
                 <item.icon className="w-4 h-4" />
@@ -53,7 +53,7 @@ const Header = () => {
           {/* CTA Button */}
           <div className="hidden md:block">
             <Link to="/contact">
-              <Button className="bg-blue-600 hover:bg-blue-700">
+              <Button className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black font-semibold">
                 Get Started
               </Button>
             </Link>
@@ -65,16 +65,16 @@ const Header = () => {
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? (
-              <X className="w-6 h-6 text-gray-600" />
+              <X className="w-6 h-6 text-gray-200" />
             ) : (
-              <Menu className="w-6 h-6 text-gray-600" />
+              <Menu className="w-6 h-6 text-gray-200" />
             )}
           </button>
         </div>
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t">
+          <div className="md:hidden py-4 border-t border-gray-700">
             <nav className="flex flex-col space-y-4">
               {navItems.map((item) => (
                 <Link
@@ -82,8 +82,8 @@ const Header = () => {
                   to={item.href}
                   className={`flex items-center space-x-2 transition-colors duration-200 ${
                     isActiveRoute(item.href)
-                      ? "text-blue-600 font-medium"
-                      : "text-gray-600 hover:text-blue-600"
+                      ? "text-yellow-400 font-medium"
+                      : "text-gray-200 hover:text-yellow-400"
                   }`}
                   onClick={() => setIsMenuOpen(false)}
                 >
@@ -92,7 +92,7 @@ const Header = () => {
                 </Link>
               ))}
               <Link to="/contact" onClick={() => setIsMenuOpen(false)}>
-                <Button className="bg-blue-600 hover:bg-blue-700 w-full">
+                <Button className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black font-semibold w-full">
                   Get Started
                 </Button>
               </Link>
