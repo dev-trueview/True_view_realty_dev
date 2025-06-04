@@ -1,569 +1,354 @@
 
 # TrueView Reality - Complete Documentation
 
-## Table of Contents
-1. [Project Overview](#project-overview)
-2. [Technology Stack](#technology-stack)
-3. [Local Development Setup](#local-development-setup)
-4. [Backend Setup](#backend-setup)
-5. [Project Structure](#project-structure)
-6. [Features & Functionality](#features--functionality)
-7. [Design & Theming](#design--theming)
-8. [Database Integration](#database-integration)
-9. [Property Management](#property-management)
-10. [User Experience Features](#user-experience-features)
-11. [Independent Analytics](#independent-analytics)
-12. [Deployment Guide](#deployment-guide)
-
 ## Project Overview
+TrueView Reality is a modern, futuristic real estate website built with React, TypeScript, and Tailwind CSS. It features automatic property listing management, dynamic image syncing, and a complete enquiry management system.
 
-TrueView Reality is a cutting-edge, futuristic real estate platform that combines modern technology with elegant design. The platform features a complete full-stack architecture with automatic property synchronization, MySQL database integration, and an independent analytics system.
-
-### Key Features
-- **Futuristic Design**: Modern gradient themes with glassmorphism effects
-- **Full-Stack Architecture**: Node.js/Express backend with MySQL database
-- **Auto Property Sync**: Automatic property loading from file system
-- **Independent Analytics**: Self-contained tracking without external dependencies
-- **Modal-Based UI**: Property details in responsive popups
-- **Smart User Tracking**: LocalStorage-based enquiry management
-- **Environment Independent**: Complete local development capability
-
-## Technology Stack
-
-### Frontend
-- **Framework**: React 18.3.1 with TypeScript
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS with custom futuristic themes
-- **UI Components**: shadcn/ui with Radix UI primitives
-- **Icons**: Lucide React
-- **Routing**: React Router DOM
-- **State Management**: React Hooks + TanStack React Query
-- **Notifications**: Toast system with Sonner
-
-### Backend
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Database**: MySQL 2
-- **CORS**: Cross-origin resource sharing enabled
-- **File System**: Automatic image detection and sync
-
-### Development Tools
-- **Package Manager**: npm
-- **Development Server**: Vite dev server
-- **Code Quality**: ESLint, TypeScript strict mode
-- **Analytics**: Independent tracking system
-
-## Local Development Setup
+## Quick Start
 
 ### Prerequisites
-```bash
-# Required software
-Node.js (version 16 or higher)
-npm (comes with Node.js)
-MySQL Server (version 8.0 or higher)
-```
+- Node.js (v14 or higher)
+- MySQL Server
+- npm or yarn package manager
 
-### Frontend Setup
+### Installation & Setup
+
+1. **Clone and Install Frontend Dependencies**
 ```bash
-# 1. Clone/download the project
 git clone <repository-url>
 cd trueview-reality
-
-# 2. Install frontend dependencies
 npm install
-
-# 3. Start frontend development server
-npm run dev
-
-# Access at: http://localhost:8080
 ```
 
-### Backend Setup
+2. **Setup Backend**
 ```bash
-# 1. Navigate to backend directory
 cd backend
-
-# 2. Install backend dependencies
 npm install
-
-# 3. Start backend server
-npm run dev
-
-# Backend runs on: http://localhost:3001
 ```
 
-### Database Setup
-```sql
--- 1. Create database
-CREATE DATABASE trueview_reality;
-
--- 2. Create enquiries table
-USE trueview_reality;
-
-CREATE TABLE enquiries (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  email VARCHAR(100) NOT NULL,
-  phone VARCHAR(20) NOT NULL,
-  message TEXT NOT NULL,
-  property VARCHAR(200),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- 3. Create properties table
-CREATE TABLE properties (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  image VARCHAR(255) NOT NULL,
-  price VARCHAR(50) NOT NULL,
-  location VARCHAR(200) NOT NULL,
-  type VARCHAR(50) NOT NULL,
-  bedrooms INT NOT NULL,
-  bathrooms INT NOT NULL,
-  sqft INT NOT NULL,
-  status ENUM('active', 'sold', 'pending') DEFAULT 'active',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Property Images Setup
-```bash
-# Create property images directory
-mkdir backend/property-images
-
-# Add property images with naming convention:
-# Format: {id}_{name}.{extension}
-# Examples:
-# 1_luxury_villa.jpg
-# 2_modern_apartment.png
-# 3_downtown_condo.jpg
-```
-
-## Backend Setup
-
-### MySQL Configuration
-Update `backend/server.js` with your MySQL credentials:
+3. **Configure MySQL Database**
+- Install MySQL Server
+- Create a new database: `trueview_reality`
+- Update credentials in `backend/server.js`:
 ```javascript
-const db = mysql.createConnection({
+const dbConfig = {
   host: 'localhost',
-  user: 'your_username',      // Update this
-  password: 'your_password',  // Update this
-  database: 'trueview_reality'
-});
+  user: 'root',
+  password: 'your_mysql_password',
+  database: 'trueview_reality',
+  port: 3306
+};
 ```
 
-### API Endpoints
-
-#### Properties API
-```javascript
-// GET /api/properties - Fetch all active properties
-// Response: Array of property objects with auto-synced images
-
-// GET /api/properties/:id/images - Get property image gallery
-// Response: Array of image URLs for specific property
+4. **Create Property Images Folder**
+```bash
+mkdir backend/property-images
 ```
 
-#### Enquiries API
-```javascript
-// POST /api/enquiries - Submit new enquiry
-// Body: { name, email, phone, message, property }
-// Response: Success confirmation
+5. **Start the Application**
+
+Backend (Terminal 1):
+```bash
+cd backend
+npm start
+# Server runs on http://localhost:3001
 ```
+
+Frontend (Terminal 2):
+```bash
+npm run dev
+# App runs on http://localhost:5173
+```
+
+## Data Management System
 
 ### Automatic Property Sync
-The backend automatically:
-1. Scans `backend/property-images/` directory
-2. Extracts property ID from filename
-3. Serves images via `/images/` endpoint
-4. Updates property records in real-time
+The system automatically syncs properties from the `backend/property-images/` folder:
 
-## Project Structure
+**Image Naming Convention:**
+```
+{id}_{type}_{location}_{price}.{extension}
+```
+
+**Examples:**
+- `1_apartment_downtown-seattle_750k-850k.jpg`
+- `2_villa_beverly-hills_1.2m-1.4m.png`
+- `3_condo_miami-beach_900k-1.1m.jpg`
+
+**Adding New Properties:**
+1. Add image to `backend/property-images/` folder with correct naming
+2. Backend auto-detects within 30 seconds
+3. Property appears on website automatically
+
+**Removing Properties:**
+1. Delete image from `backend/property-images/` folder
+2. Backend removes from database within 30 seconds
+3. Property disappears from website
+
+### Database Schema
+Properties and enquiries are stored in MySQL with automatic table creation on first run.
+
+**Properties Table Features:**
+- Auto-incrementing ID
+- Image path storage
+- Property details (price, location, type, etc.)
+- Status tracking (active, sold, pending)
+- Automatic timestamps
+
+**Enquiries Table Features:**
+- Customer contact information
+- Property-specific enquiries
+- Automatic timestamps
+- JSON property data storage
+
+### Fallback System
+When backend is unavailable, the frontend displays demo properties from `src/data/fallbackProperties.ts`, ensuring the website remains functional.
+
+## Features
+
+### Core Functionality
+- **Dynamic Property Listings**: Auto-sync from image folder
+- **Property Search & Filtering**: Location and type-based filtering
+- **Enquiry Management**: Database-backed form submissions
+- **Property Details Modal**: Detailed property information
+- **Responsive Design**: Mobile-first approach
+- **Toast Notifications**: User feedback system
+
+### UI/UX Features
+- **Futuristic Theme**: Gradient backgrounds and glassmorphism effects
+- **Smooth Animations**: Hover effects and transitions
+- **Auto Popup System**: Timed enquiry prompts (respects user preferences)
+- **Loading States**: Skeleton loading and spinners
+- **Error Handling**: Graceful fallbacks and error messages
+
+### Technical Features
+- **TypeScript**: Full type safety
+- **React Hooks**: Custom hooks for data management
+- **Tailwind CSS**: Utility-first styling
+- **shadcn/ui**: Pre-built component library
+- **MySQL Integration**: Robust database operations
+- **CORS Enabled**: Cross-origin resource sharing
+- **Auto-refresh**: Real-time property updates
+
+## File Structure
 
 ```
 trueview-reality/
 ├── src/
-│   ├── components/           # React components
-│   │   ├── ui/              # shadcn/ui base components
-│   │   ├── Header.tsx       # Navigation with futuristic design
-│   │   ├── Footer.tsx       # Footer with company branding
-│   │   ├── PropertyCard.tsx # Property display cards
-│   │   ├── PropertyDetailsModal.tsx # Property popup details
-│   │   ├── EnquiryForm.tsx  # Contact form component
-│   │   └── ...              # Other components
-│   ├── pages/               # Route components
-│   │   ├── Index.tsx        # Homepage with hero section
-│   │   ├── ActiveListings.tsx # Properties listing page
-│   │   ├── AboutUs.tsx      # Company information
-│   │   ├── Contact.tsx      # Contact page
-│   │   └── NotFound.tsx     # 404 error page
-│   ├── hooks/               # Custom React hooks
-│   │   └── useProperties.ts # Property data fetching
-│   ├── utils/               # Utility functions
-│   │   └── database.ts      # API communication layer
-│   └── App.tsx             # Main application component
+│   ├── components/
+│   │   ├── ui/                 # shadcn/ui components
+│   │   ├── Header.tsx          # Navigation header
+│   │   ├── Footer.tsx          # Site footer
+│   │   ├── PropertyCard.tsx    # Property display card
+│   │   ├── PropertyCarousel.tsx # Hero carousel
+│   │   ├── PropertyDetailsModal.tsx # Property details popup
+│   │   ├── EnquiryForm.tsx     # Contact form
+│   │   ├── TestimonialsSection.tsx # Customer reviews
+│   │   └── WhyChooseUsSection.tsx # Benefits section
+│   ├── pages/
+│   │   ├── Index.tsx           # Home page
+│   │   ├── ActiveListings.tsx  # Property listings page
+│   │   ├── AboutUs.tsx         # About page
+│   │   ├── Contact.tsx         # Contact page
+│   │   └── NotFound.tsx        # 404 page
+│   ├── hooks/
+│   │   ├── useProperties.ts    # Property data management
+│   │   └── use-toast.ts        # Toast notifications
+│   ├── utils/
+│   │   └── database.ts         # API communication
+│   ├── data/
+│   │   └── fallbackProperties.ts # Demo property data
+│   └── lib/
+│       └── utils.ts            # Utility functions
 ├── backend/
-│   ├── server.js           # Express server with MySQL
-│   ├── package.json        # Backend dependencies
-│   └── property-images/    # Auto-synced property images
+│   ├── server.js               # Express.js backend
+│   ├── package.json            # Backend dependencies
+│   └── property-images/        # Property image storage
 ├── public/
-│   ├── favicon.ico         # Site favicon
-│   └── analytics.js        # Independent tracking script
-└── setup-instructions.md   # Detailed setup guide
+│   ├── favicon.ico             # Site icon
+│   └── analytics.js            # Independent analytics
+└── docs/
+    ├── DOCUMENTATION.md        # This file
+    └── DATA_STRUCTURE.md       # Data structure details
 ```
 
-## Features & Functionality
+## API Documentation
 
-### 1. Property Management System
-- **Auto-Sync**: Properties automatically load from file system
-- **Real-time Updates**: Changes reflect immediately on frontend
-- **Image Management**: Multiple images per property support
-- **Status Tracking**: Active, sold, and pending property states
+### Endpoints
 
-### 2. Modal-Based Property Details
-- **Responsive Design**: Works seamlessly on all devices
-- **Rich Content**: Extended property information and features
-- **Image Galleries**: Multiple property photos with thumbnails
-- **Action Buttons**: Direct enquiry and viewing requests
+#### GET /api/properties
+- **Purpose**: Fetch all active properties
+- **Response**: Array of property objects
+- **Auto-sync**: Syncs with image folder before response
 
-### 3. Smart User Tracking
-```javascript
-// LocalStorage-based enquiry tracking
-localStorage.setItem('enquirySubmitted', 'true');
-
-// Auto-popup control (1-minute intervals)
-// Disabled after user submits enquiry
-const hasSubmitted = localStorage.getItem('enquirySubmitted') === 'true';
-```
-
-### 4. Database Integration
-- **MySQL Backend**: Production-ready database storage
-- **Real-time Sync**: 30-second property refresh intervals
-- **Data Persistence**: All enquiries saved to database
-- **Error Handling**: Graceful fallbacks for offline mode
-
-## Design & Theming
-
-### Color Palette
-```css
-/* Primary Colors */
---cyan: #06b6d4      /* Primary accent */
---purple: #8b5cf6    /* Secondary accent */
---pink: #ec4899      /* Tertiary accent */
---slate: #0f172a     /* Dark backgrounds */
-
-/* Gradients */
-background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 50%, #ec4899 100%);
-```
-
-### Design Elements
-- **Glassmorphism**: Transparent cards with backdrop blur
-- **Gradient Text**: Multi-color text effects
-- **Neon Glows**: Subtle shadow effects
-- **Animated Gradients**: Moving background patterns
-- **Hover Effects**: Transform and glow animations
-
-### Responsive Breakpoints
-```css
-/* Mobile First Approach */
-sm: 640px    /* Small tablets */
-md: 768px    /* Tablets */
-lg: 1024px   /* Small desktops */
-xl: 1280px   /* Large desktops */
-2xl: 1536px  /* Extra large screens */
-```
-
-## Database Integration
-
-### Enquiries Table Schema
-```sql
-CREATE TABLE enquiries (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  email VARCHAR(100) NOT NULL,
-  phone VARCHAR(20) NOT NULL,
-  message TEXT NOT NULL,
-  property VARCHAR(200),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Properties Table Schema
-```sql
-CREATE TABLE properties (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  image VARCHAR(255) NOT NULL,
-  price VARCHAR(50) NOT NULL,
-  location VARCHAR(200) NOT NULL,
-  type VARCHAR(50) NOT NULL,
-  bedrooms INT NOT NULL,
-  bathrooms INT NOT NULL,
-  sqft INT NOT NULL,
-  status ENUM('active', 'sold', 'pending') DEFAULT 'active',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### API Integration
-```typescript
-// Frontend API calls
-const response = await fetch('http://localhost:3001/api/properties');
-const properties = await response.json();
-
-// Backend MySQL queries
-const query = 'SELECT * FROM properties WHERE status = "active"';
-db.query(query, (err, results) => { /* handle results */ });
-```
-
-## Property Management
-
-### Image File Naming Convention
-```bash
-# Format: {id}_{descriptive_name}.{extension}
-1_luxury_villa_downtown.jpg
-2_modern_apartment_skyview.png
-3_cozy_townhouse_suburbs.jpg
-4_penthouse_city_center.webp
-```
-
-### Automatic Detection Process
-1. **File Scan**: Backend scans property-images directory
-2. **ID Extraction**: Extracts property ID from filename
-3. **Database Sync**: Updates or creates property records
-4. **Frontend Update**: Properties refresh every 30 seconds
-5. **Image Serving**: Files served via `/images/` endpoint
-
-### Adding New Properties
-```bash
-# 1. Add image to backend/property-images/
-cp new_property.jpg backend/property-images/5_modern_loft.jpg
-
-# 2. Property automatically appears on frontend
-# 3. Update property details in database if needed
-```
-
-## User Experience Features
-
-### Auto-Popup System
-```javascript
-// Displays enquiry form every 60 seconds
-// Automatically disabled after user submits enquiry
-useEffect(() => {
-  if (hasSubmittedEnquiry) return;
-  
-  const interval = setInterval(() => {
-    setShowAutoPopup(true);
-  }, 60000);
-  
-  return () => clearInterval(interval);
-}, [hasSubmittedEnquiry]);
-```
-
-### Search and Filtering
-- **Location Search**: Real-time location filtering
-- **Property Type**: House, apartment, condo, townhouse
-- **Price Range**: Customizable price filtering
-- **Advanced Filters**: Bedrooms, bathrooms, square footage
-
-### Modal Interactions
-- **Property Details**: Comprehensive property information
-- **Image Galleries**: Multiple photos with navigation
-- **Enquiry Forms**: Context-aware contact forms
-- **Responsive Design**: Optimized for all screen sizes
-
-## Independent Analytics
-
-### Local Tracking System
-The platform includes a self-contained analytics system:
-
-```javascript
-// Track page views
-TrueViewAnalytics.trackPageView('/active-listings');
-
-// Track user interactions
-TrueViewAnalytics.trackEvent('property', 'view_details', 'luxury_villa');
-
-// Track form submissions
-TrueViewAnalytics.trackEvent('form', 'submit', 'enquiry_form');
-```
-
-### Analytics Features
-- **Page View Tracking**: Automatic page navigation tracking
-- **Event Tracking**: Button clicks, form submissions, interactions
-- **Local Storage**: Data stored in browser localStorage
-- **Privacy Compliant**: No external tracking services
-- **Data Retention**: Configurable data retention policies
-
-### Analytics Data Structure
-```javascript
+#### POST /api/enquiries
+- **Purpose**: Submit customer enquiry
+- **Body**: 
+```json
 {
-  "pageViews": [
-    {
-      "page": "/active-listings",
-      "timestamp": "2024-01-15T10:30:00.000Z",
-      "userAgent": "Mozilla/5.0..."
-    }
-  ],
-  "events": [
-    {
-      "category": "property",
-      "action": "view_details",
-      "label": "luxury_villa",
-      "timestamp": "2024-01-15T10:31:00.000Z"
-    }
-  ]
+  "name": "string",
+  "email": "string", 
+  "phone": "string",
+  "message": "string",
+  "property": "string"
 }
 ```
 
-## Deployment Guide
+#### GET /api/enquiries
+- **Purpose**: Retrieve all enquiries (admin)
+- **Response**: Array of enquiry objects
 
-### Frontend Deployment
-```bash
-# 1. Build production version
-npm run build
+#### GET /api/properties/:id/images
+- **Purpose**: Get all images for specific property
+- **Response**: Array of image URLs
 
-# 2. Deploy 'dist' folder to:
-# - Netlify
-# - Vercel
-# - GitHub Pages
-# - Any static hosting service
+### Data Types
+
+```typescript
+interface Property {
+  id: number;
+  image: string;
+  price: string;
+  location: string;
+  type: string;
+  bedrooms: number;
+  bathrooms: number;
+  sqft: number;
+  status: 'active' | 'sold' | 'pending';
+  created_at?: string;
+}
+
+interface EnquiryData {
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+  property: string;
+  created_at?: string;
+}
 ```
 
-### Backend Deployment
-```bash
-# 1. Choose hosting service:
-# - DigitalOcean
-# - AWS EC2
-# - Heroku
-# - Railway
+## Styling & Theme
 
-# 2. Set up MySQL database
-# 3. Update database connection settings
-# 4. Deploy backend code
-# 5. Configure environment variables
+### Design System
+- **Primary Colors**: Purple and blue gradients
+- **Typography**: Inter font family
+- **Effects**: Glassmorphism, gradients, smooth transitions
+- **Responsive**: Mobile-first breakpoints
+- **Accessibility**: ARIA labels and semantic HTML
+
+### Key CSS Classes
+- `.gradient-bg`: Primary gradient background
+- `.card-gradient`: Glass effect cards
+- `.glass-effect`: Backdrop blur effect
+- `.neon-glow`: Glowing border effect
+- `.text-glow`: Text shadow effect
+- `.animated-gradient`: Moving gradient animation
+- `.hover-lift`: Hover elevation effect
+
+### Tailwind Configuration
+- Custom color scheme with CSS variables
+- Extended spacing and sizing utilities
+- Custom animation keyframes
+- Glassmorphism utilities
+
+## Component Architecture
+
+### Custom Hooks
+- **useProperties**: Manages property data fetching and caching
+- **use-toast**: Handles notification system
+
+### Component Pattern
+- Small, focused components (50 lines or less)
+- TypeScript interfaces for all props
+- Consistent error handling
+- Loading state management
+
+## Deployment
+
+### Production Build
+```bash
+npm run build
+npm run preview
 ```
 
 ### Environment Variables
-```bash
-# Backend Environment Variables
-DB_HOST=localhost
-DB_USER=your_username
-DB_PASSWORD=your_password
-DB_NAME=trueview_reality
-PORT=3001
+- `MYSQL_HOST`: Database host
+- `MYSQL_USER`: Database username  
+- `MYSQL_PASSWORD`: Database password
+- `MYSQL_DATABASE`: Database name
+- `PORT`: Backend server port
 
-# Frontend Environment Variables (optional)
-VITE_API_URL=http://localhost:3001/api
-```
+### Deployment Checklist
+- [ ] Configure production database
+- [ ] Update API endpoints for production
+- [ ] Set up property-images folder on server
+- [ ] Configure CORS for production domain
+- [ ] Set up SSL certificates
+- [ ] Configure backup system
 
-### SSL and Security
-```bash
-# Recommended security measures:
-# 1. Enable HTTPS with SSL certificates
-# 2. Configure CORS properly for production
-# 3. Set up database connection pooling
-# 4. Enable MySQL query logging
-# 5. Implement rate limiting
-```
+## Maintenance
 
-## Performance Optimization
+### Regular Tasks
+- Monitor property-images folder
+- Review enquiry submissions
+- Update property information
+- Backup database
+- Monitor error logs
 
-### Frontend Optimizations
-- **Code Splitting**: Automatic route-based splitting
-- **Image Optimization**: Lazy loading and compression
-- **Bundle Analysis**: Webpack bundle analyzer
-- **Caching**: Browser caching for static assets
-
-### Backend Optimizations
-- **Database Indexing**: Optimized queries with indexes
-- **Connection Pooling**: Efficient database connections
-- **Caching**: Redis caching for frequently accessed data
-- **Image Compression**: Automatic image optimization
-
-### Loading Performance
-```javascript
-// Property data caching
-const { data, isLoading, error } = useQuery({
-  queryKey: ['properties'],
-  queryFn: fetchProperties,
-  staleTime: 30000, // 30 seconds
-  cacheTime: 300000 // 5 minutes
-});
-```
+### Updates
+- Property images: Add/remove files in backend/property-images/
+- Content updates: Edit components directly
+- Styling changes: Update Tailwind classes
+- Database: Direct SQL updates for property details
 
 ## Troubleshooting
 
 ### Common Issues
 
-#### Database Connection Errors
-```bash
-# Check MySQL service status
-sudo systemctl status mysql
+1. **Properties not loading**
+   - Check MySQL connection
+   - Verify backend server is running
+   - Check image folder permissions
 
-# Restart MySQL service
-sudo systemctl restart mysql
+2. **Images not displaying**
+   - Verify image paths in database
+   - Check file naming convention
+   - Ensure images exist in property-images folder
 
-# Check connection settings in backend/server.js
-```
+3. **Enquiries not submitting**
+   - Check database connection
+   - Verify table structure
+   - Check CORS configuration
 
-#### Property Images Not Loading
-```bash
-# Verify image directory exists
-ls -la backend/property-images/
+4. **Backend connection failed**
+   - Verify MySQL service is running
+   - Check database credentials
+   - Ensure port 3001 is available
 
-# Check file permissions
-chmod 644 backend/property-images/*
+### Debug Mode
+- Check browser console for errors
+- Monitor backend logs
+- Use network tab to verify API calls
+- Check database directly for data integrity
 
-# Verify naming convention
-# Correct: 1_property_name.jpg
-# Incorrect: property_name_1.jpg
-```
+## Contributing
 
-#### Frontend Build Issues
-```bash
-# Clear node_modules and reinstall
-rm -rf node_modules package-lock.json
-npm install
+### Development Workflow
+1. Create feature branch
+2. Make changes following existing patterns
+3. Test both frontend and backend
+4. Update documentation if needed
+5. Submit pull request
 
-# Clear Vite cache
-rm -rf .vite
+### Code Standards
+- TypeScript for type safety
+- ESLint for code quality
+- Prettier for formatting
+- Component-first architecture
+- Responsive design principles
 
-# Check for TypeScript errors
-npm run build
-```
+---
 
-### Performance Issues
-```bash
-# Monitor backend performance
-# Add logging to server.js for query timing
-
-# Check database performance
-SHOW PROCESSLIST;
-EXPLAIN SELECT * FROM properties;
-
-# Optimize images
-# Use WebP format for better compression
-# Implement lazy loading for property images
-```
-
-## Future Enhancements
-
-### Planned Features
-1. **Virtual Reality Tours**: 360° property viewing
-2. **AI-Powered Recommendations**: Machine learning property matching
-3. **Blockchain Integration**: Secure property transactions
-4. **Mobile App**: React Native companion app
-5. **Advanced Analytics**: Real-time dashboards
-6. **Multi-language Support**: Internationalization
-7. **Social Features**: Property sharing and reviews
-8. **Payment Integration**: Online property payments
-
-### Technical Improvements
-1. **GraphQL API**: More efficient data fetching
-2. **Microservices**: Scalable backend architecture
-3. **CDN Integration**: Global content delivery
-4. **Progressive Web App**: Offline functionality
-5. **WebSocket Integration**: Real-time updates
-6. **Docker Containers**: Simplified deployment
-7. **Kubernetes**: Container orchestration
-8. **Monitoring**: Application performance monitoring
-
-This documentation covers the complete TrueView Reality platform with all recent updates including the futuristic design, backend integration, automatic property synchronization, and independent analytics system. The platform is now fully production-ready with comprehensive local development capabilities.
+For detailed data structure information, see `DATA_STRUCTURE.md`.
+For specific setup instructions, see `setup-instructions.md`.

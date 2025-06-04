@@ -1,21 +1,34 @@
 
 import { useState, useEffect } from 'react';
 import { databaseAPI, Property } from '@/utils/database';
+import { fallbackProperties } from '@/data/fallbackProperties';
 
 export const useProperties = () => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [usingFallback, setUsingFallback] = useState(false);
 
   const fetchProperties = async () => {
     try {
       setLoading(true);
       const data = await databaseAPI.fetchActiveProperties();
-      setProperties(data);
-      setError(null);
+      
+      if (data && data.length > 0) {
+        setProperties(data);
+        setUsingFallback(false);
+        setError(null);
+      } else {
+        // Use fallback data if backend returns empty or fails
+        setProperties(fallbackProperties);
+        setUsingFallback(true);
+        setError(null);
+      }
     } catch (err) {
-      setError('Failed to fetch properties');
-      console.error('Error fetching properties:', err);
+      console.log('Backend unavailable, using fallback data');
+      setProperties(fallbackProperties);
+      setUsingFallback(true);
+      setError(null);
     } finally {
       setLoading(false);
     }
@@ -24,11 +37,21 @@ export const useProperties = () => {
   useEffect(() => {
     fetchProperties();
     
-    // Refresh properties every 30 seconds to sync with backend
-    const interval = setInterval(fetchProperties, 30000);
+    // Only set up polling if not using fallback data
+    const interval = setInterval(() => {
+      if (!usingFallback) {
+        fetchProperties();
+      }
+    }, 30000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [usingFallback]);
 
-  return { properties, loading, error, refetch: fetchProperties };
+  return { 
+    properties, 
+    loading, 
+    error, 
+    refetch: fetchProperties,
+    usingFallback 
+  };
 };

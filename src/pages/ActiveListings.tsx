@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,6 +11,7 @@ import PropertyCard from "@/components/PropertyCard";
 import PropertyDetailsModal from "@/components/PropertyDetailsModal";
 import EnquiryForm from "@/components/EnquiryForm";
 import Footer from "@/components/Footer";
+import { useProperties } from "@/hooks/useProperties";
 
 const ActiveListings = () => {
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
@@ -19,90 +21,10 @@ const ActiveListings = () => {
   const [propertyType, setPropertyType] = useState("");
   const { toast } = useToast();
 
-  const activeProperties = [
-    {
-      id: 1,
-      image: "/placeholder.svg",
-      price: "$750,000 - $850,000",
-      location: "Downtown Seattle",
-      type: "Apartment",
-      bedrooms: 3,
-      bathrooms: 2,
-      sqft: 1800
-    },
-    {
-      id: 2,
-      image: "/placeholder.svg", 
-      price: "$1,200,000 - $1,400,000",
-      location: "Beverly Hills",
-      type: "Villa",
-      bedrooms: 5,
-      bathrooms: 4,
-      sqft: 3200
-    },
-    {
-      id: 3,
-      image: "/placeholder.svg",
-      price: "$450,000 - $550,000",
-      location: "Austin Texas",
-      type: "Condo",
-      bedrooms: 2,
-      bathrooms: 2,
-      sqft: 1200
-    },
-    {
-      id: 4,
-      image: "/placeholder.svg",
-      price: "$2,100,000 - $2,500,000",
-      location: "Manhattan NYC",
-      type: "Penthouse",
-      bedrooms: 4,
-      bathrooms: 3,
-      sqft: 2800
-    },
-    {
-      id: 5,
-      image: "/placeholder.svg",
-      price: "$650,000 - $750,000",
-      location: "San Francisco",
-      type: "Townhouse",
-      bedrooms: 3,
-      bathrooms: 2.5,
-      sqft: 2100
-    },
-    {
-      id: 6,
-      image: "/placeholder.svg",
-      price: "$900,000 - $1,100,000",
-      location: "Miami Beach",
-      type: "Condo",
-      bedrooms: 2,
-      bathrooms: 2,
-      sqft: 1600
-    },
-    {
-      id: 7,
-      image: "/placeholder.svg",
-      price: "$1,800,000 - $2,200,000",
-      location: "Los Angeles",
-      type: "Villa",
-      bedrooms: 6,
-      bathrooms: 5,
-      sqft: 4500
-    },
-    {
-      id: 8,
-      image: "/placeholder.svg",
-      price: "$425,000 - $525,000",
-      location: "Phoenix",
-      type: "Townhouse",
-      bedrooms: 3,
-      bathrooms: 2,
-      sqft: 1900
-    }
-  ];
+  // Use the same hook as Index page for consistency
+  const { properties, loading, error, usingFallback } = useProperties();
 
-  const filteredProperties = activeProperties.filter(property => {
+  const filteredProperties = properties.filter(property => {
     const matchesLocation = !searchLocation || property.location.toLowerCase().includes(searchLocation.toLowerCase());
     const matchesType = !propertyType || property.type === propertyType;
     return matchesLocation && matchesType;
@@ -120,7 +42,6 @@ const ActiveListings = () => {
 
   const handleFormSubmit = (formData: any) => {
     console.log("Property enquiry submitted:", formData);
-    // Set enquiry submitted flag in localStorage
     localStorage.setItem('enquirySubmitted', 'true');
     
     toast({
@@ -130,6 +51,20 @@ const ActiveListings = () => {
     setShowEnquiryModal(false);
     setSelectedProperty(null);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
+        <Header />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-lg text-gray-600">Loading properties...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -144,6 +79,11 @@ const ActiveListings = () => {
           <p className="text-xl text-blue-100 max-w-2xl mx-auto">
             Discover your dream home from our curated collection of premium properties
           </p>
+          {usingFallback && (
+            <p className="text-sm text-blue-200 mt-2">
+              Currently showing demo properties (Backend offline)
+            </p>
+          )}
         </div>
       </section>
 
