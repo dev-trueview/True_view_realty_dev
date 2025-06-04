@@ -1,3 +1,4 @@
+
 # 📖 TrueView Reality - Beginner Developer Guide
 
 Welcome! This guide will help you make changes to the TrueView Reality website, even if you're new to coding. Everything is explained in simple steps with examples.
@@ -10,8 +11,9 @@ Welcome! This guide will help you make changes to the TrueView Reality website, 
 5. [How to Modify Logic](#how-to-modify-logic)
 6. [How to Add/Remove Property Cards](#how-to-addremove-property-cards)
 7. [Folder Structure](#folder-structure)
-8. [How to Preview Changes](#how-to-preview-changes)
-9. [Best Practices](#best-practices)
+8. [UI Component File Reference](#ui-component-file-reference)
+9. [How to Preview Changes](#how-to-preview-changes)
+10. [Best Practices](#best-practices)
 
 ---
 
@@ -373,7 +375,171 @@ trueview-reality/
 
 ---
 
-## 🧪 7. How to Preview Changes
+## 🎯 7. UI Component File Reference
+
+This section tells you exactly which file to edit for each part of the website.
+
+### 🏠 **Home Page (/) Components:**
+
+#### Header/Navigation Bar
+- **File**: `src/components/Header.tsx`
+- **What it controls**: Logo, navigation menu, "Get Started" button
+- **Common changes**: Menu items, logo, navigation links
+
+#### Hero Section (Top banner with big text)
+- **File**: `src/pages/Index.tsx` (lines 85-95 approximately)
+- **What it controls**: Main heading, subtitle, call-to-action
+- **Common changes**: Hero text, background, button text
+
+#### Property Carousel (Sliding property images)
+- **File**: `src/components/PropertyCarousel.tsx`
+- **What it controls**: Sliding property showcase
+- **Common changes**: Carousel content, timing, images
+
+#### Search Bar Section
+- **File**: `src/pages/Index.tsx` (lines 96-130 approximately)
+- **What it controls**: Location search, price range, property type filters
+- **Common changes**: Search options, placeholder text, filter options
+
+#### Active Properties Grid
+- **File**: `src/pages/Index.tsx` (lines 131-150 approximately)
+- **What it controls**: Property cards display on homepage
+- **Common changes**: Number of properties shown, grid layout
+
+#### Individual Property Cards
+- **File**: `src/components/PropertyCard.tsx`
+- **What it controls**: Each property card layout and content
+- **Common changes**: Card design, button text, information display
+
+#### Why Choose Us Section
+- **File**: `src/components/WhyChooseUsSection.tsx`
+- **What it controls**: Features/benefits section
+- **Common changes**: Feature list, icons, descriptions
+
+#### Testimonials Section
+- **File**: `src/components/TestimonialsSection.tsx`
+- **What it controls**: Customer reviews section
+- **Common changes**: Review content, customer names, ratings
+
+#### Footer
+- **File**: `src/components/Footer.tsx`
+- **What it controls**: Bottom section with contact info, links, newsletter
+- **Common changes**: Contact details, social links, company info
+
+---
+
+### 🏢 **Active Listings Page (/active-listings) Components:**
+
+#### Page Header/Title
+- **File**: `src/pages/ActiveListings.tsx` (lines 40-50 approximately)
+- **What it controls**: Page title and description
+- **Common changes**: Title text, subtitle
+
+#### Search and Filter Bar
+- **File**: `src/pages/ActiveListings.tsx` (lines 51-85 approximately)
+- **What it controls**: Location search, property type filter, search button
+- **Common changes**: Filter options, search functionality
+
+#### Properties Grid
+- **File**: `src/pages/ActiveListings.tsx` (lines 86-120 approximately)
+- **What it controls**: All property cards display
+- **Common changes**: Grid layout, sorting options
+
+#### Property Count Display
+- **File**: `src/pages/ActiveListings.tsx` (lines 90-95 approximately)
+- **What it controls**: "X Properties Available" text
+- **Common changes**: Counter text, formatting
+
+---
+
+### ℹ️ **About Us Page (/about) Components:**
+
+#### All Content
+- **File**: `src/pages/AboutUs.tsx`
+- **What it controls**: Entire about page content
+- **Common changes**: Company story, team info, mission statement
+
+---
+
+### 📞 **Contact Page (/contact) Components:**
+
+#### Contact Information Cards
+- **File**: `src/pages/Contact.tsx` (lines 25-45 approximately)
+- **What it controls**: Address, phone, email, business hours cards
+- **Common changes**: Contact details, icons, formatting
+
+#### Contact Form
+- **File**: `src/pages/Contact.tsx` (lines 70-120 approximately)
+- **What it controls**: Contact form fields and styling
+- **Common changes**: Form fields, labels, validation
+
+#### Map Section
+- **File**: `src/pages/Contact.tsx` (lines 125-140 approximately)
+- **What it controls**: Map placeholder and office info
+- **Common changes**: Map integration, office details
+
+---
+
+### 🔧 **Shared Components (Used on Multiple Pages):**
+
+#### Enquiry Form Popup
+- **File**: `src/components/EnquiryForm.tsx`
+- **What it controls**: Property enquiry popup form
+- **Common changes**: Form fields, validation, styling
+
+#### Property Details Modal
+- **File**: `src/components/PropertyDetailsModal.tsx`
+- **What it controls**: Property details popup window
+- **Common changes**: Property information display, modal layout
+
+---
+
+### 🎨 **Styling and Layout:**
+
+#### Global Styles
+- **File**: `src/index.css`
+- **What it controls**: Site-wide colors, fonts, animations
+- **Common changes**: Color schemes, typography, global effects
+
+#### Component-Specific Styles
+- **Files**: Individual component files (`.tsx` files)
+- **What it controls**: Tailwind CSS classes within each component
+- **Common changes**: Colors, spacing, sizes using Tailwind classes
+
+---
+
+### 📊 **Data and Content:**
+
+#### Property Data
+- **File**: `src/data/fallbackProperties.ts`
+- **What it controls**: Backup property information
+- **Common changes**: Property details, images, prices
+
+#### Property Data Management
+- **File**: `src/hooks/useProperties.ts`
+- **What it controls**: How property data is fetched and managed
+- **Common changes**: Data refresh timing, error handling
+
+---
+
+### 🧩 **Quick Reference for Common Changes:**
+
+| What You Want to Change | File to Edit | Section/Line |
+|--------------------------|--------------|--------------|
+| Logo | `src/components/Header.tsx` | Line 20-25 |
+| Main navigation menu | `src/components/Header.tsx` | Line 15-20 |
+| Homepage hero text | `src/pages/Index.tsx` | Line 85-95 |
+| Contact phone number | `src/pages/Contact.tsx` | Line 30-35 |
+| Footer company info | `src/components/Footer.tsx` | Line 15-25 |
+| Property card layout | `src/components/PropertyCard.tsx` | Entire file |
+| Search filters | `src/pages/Index.tsx` or `ActiveListings.tsx` | Line 96-130 |
+| Color scheme | `src/index.css` | CSS variables at top |
+| Popup timing | `src/pages/Index.tsx` | Line 45-50 |
+| Add new property | `src/data/fallbackProperties.ts` | Add to array |
+
+---
+
+## 🧪 8. How to Preview Changes
 
 ### Step 1: Install Dependencies (First Time Only)
 1. Open Terminal in VS Code: `View` → `Terminal`
@@ -408,7 +574,7 @@ trueview-reality/
 
 ---
 
-## ✅ 8. Best Practices
+## ✅ 9. Best Practices
 
 ### 🔒 Before Making Changes
 1. **Backup Your Files**:
