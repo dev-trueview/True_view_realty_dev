@@ -17,7 +17,7 @@ app.use('/images', express.static(path.join(__dirname, 'property-images')));
 const dbConfig = {
   host: 'localhost',
   user: 'root',
-  password: 'your_password', // Update with your MySQL password
+  password: '0844', // Update with your MySQL password
   database: 'trueview_reality',
   port: 3306
 };
@@ -37,7 +37,6 @@ async function initializeDatabase() {
     
     // Create database if it doesn't exist
     await connection.execute(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`);
-    await connection.execute(`USE ${dbConfig.database}`);
     
     // Create enquiries table
     await connection.execute(`
