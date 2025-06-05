@@ -351,6 +351,76 @@ app.get('/api/properties/:id/images', async (req, res) => {
   }
 });
 
+// Get single property by ID with detailed information
+app.get('/api/properties/:id', async (req, res) => {
+  try {
+    const propertyId = req.params.id;
+    const connection = await pool.getConnection();
+    
+    const [rows] = await connection.execute(
+      'SELECT * FROM properties WHERE id = ? AND status = "active"',
+      [propertyId]
+    );
+    
+    if (rows.length === 0) {
+      connection.release();
+      return res.status(404).json({ success: false, message: 'Property not found' });
+    }
+    
+    const property = rows[0];
+    
+    // Parse JSON fields if they exist
+    if (property.features) {
+      try {
+        property.features = JSON.parse(property.features);
+      } catch (e) {
+        property.features = [];
+      }
+    }
+    
+    if (property.amenities) {
+      try {
+        property.amenities = JSON.parse(property.amenities);
+      } catch (e) {
+        property.amenities = [];
+      }
+    }
+    
+    if (property.neighborhood_info) {
+      try {
+        property.neighborhood_info = JSON.parse(property.neighborhood_info);
+      } catch (e) {
+        property.neighborhood_info = {};
+      }
+    }
+    
+    // Fetch property images
+    const propertyImagesDir = path.join(__dirname, 'property-images');
+    try {
+      const files = await fs.readdir(propertyImagesDir);
+      const propertyImages = files.filter(file => 
+        file.startsWith(`${propertyId}_`) && /\.(jpg|jpeg|png|gif|webp)$/i.test(file)
+      );
+      property.images = propertyImages.map(file => `/images/${file}`);
+    } catch (error) {
+      property.images = [property.image];
+    }
+    
+    // Increment views count
+    await connection.execute(
+      'UPDATE properties SET views_count = views_count + 1 WHERE id = ?',
+      [propertyId]
+    );
+    
+    connection.release();
+    
+    res.json(property);
+  } catch (error) {
+    console.error('Error fetching property details:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch property details' });
+  }
+});
+
 // Auto-sync properties every 30 seconds
 setInterval(syncPropertiesFromFolder, 30000);
 

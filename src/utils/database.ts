@@ -28,6 +28,22 @@ export interface Property {
   sqft: number;
   status: 'active' | 'sold' | 'pending';
   created_at?: string;
+  // Extended properties for detailed view
+  description?: string;
+  features?: string[];
+  amenities?: string[];
+  year_built?: number;
+  neighborhood_info?: {
+    walkScore?: number;
+    transitScore?: number;
+    bikeScore?: number;
+    schools?: string;
+    shopping?: string;
+    dining?: string;
+  };
+  images?: string[];
+  views_count?: number;
+  enquiries_count?: number;
 }
 
 // API endpoints for backend communication
@@ -73,6 +89,23 @@ export const databaseAPI = {
     } catch (error) {
       console.error('Error fetching properties:', error);
       return [];
+    }
+  },
+
+  // Fetch detailed property information by ID
+  fetchPropertyDetails: async (propertyId: number): Promise<Property | null> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/properties/${propertyId}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch property details');
+      }
+      
+      const property = await response.json();
+      return property;
+    } catch (error) {
+      console.error('Error fetching property details:', error);
+      return null;
     }
   },
 
