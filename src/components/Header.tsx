@@ -27,7 +27,11 @@ const Header = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center">
-              <Home className="w-5 h-5 text-white" />
+              <img
+              src="/favicon.png"
+              alt="Logo"
+              className="w-full h-full object-contain"
+            />
             </div>
             <span className="text-xl font-bold text-white">TrueView Reality</span>
           </Link>
