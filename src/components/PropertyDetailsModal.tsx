@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -40,6 +39,7 @@ const PropertyDetailsModal = ({ isOpen, onClose, onEnquiry, property }: Property
             // Fallback to basic property data with default values
             setDetailedProperty({
               ...property,
+              status: 'active',
               description: `This stunning modern ${property.type.toLowerCase()} offers the perfect blend of luxury and comfort in ${property.location}.`,
               features: [
                 "Modern kitchen with stainless steel appliances",
@@ -64,6 +64,7 @@ const PropertyDetailsModal = ({ isOpen, onClose, onEnquiry, property }: Property
           // Use basic property data as fallback
           setDetailedProperty({
             ...property,
+            status: 'active',
             description: `Property in ${property.location}`,
             features: [],
             images: [property.image]
