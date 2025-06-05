@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Home, Phone, Mail, MapPin, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
+import AdminLogin from "./AdminLogin";
 
 const Footer = () => {
   return (
@@ -78,10 +79,11 @@ const Footer = () => {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-gray-700 mt-8 pt-8 text-center">
+        <div className="border-t border-gray-700 mt-8 pt-8 flex justify-between items-center">
           <p className="text-gray-400">
             © 2024 TrueView Reality. All rights reserved. | Privacy Policy | Terms of Service
           </p>
+          <AdminLogin />
         </div>
       </div>
     </footer>

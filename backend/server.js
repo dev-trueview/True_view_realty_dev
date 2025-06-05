@@ -1,4 +1,3 @@
-
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
@@ -38,7 +37,7 @@ async function initializeDatabase() {
     // Create database if it doesn't exist
     await connection.execute(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`);
     
-    // Create enquiries table
+    // Create enquiries table with enhanced schema
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS enquiries (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -47,11 +46,14 @@ async function initializeDatabase() {
         phone VARCHAR(20) NOT NULL,
         message TEXT,
         property VARCHAR(255),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
     
-    // Create properties table
+    // Create properties table with enhanced schema
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS properties (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -62,7 +64,27 @@ async function initializeDatabase() {
         bedrooms INT,
         bathrooms DECIMAL(3,1),
         sqft INT,
+        amenities TEXT,
+        description TEXT,
+        features TEXT,
+        neighborhood_info TEXT,
+        virtual_tour_url VARCHAR(500),
         status ENUM('active', 'sold', 'pending') DEFAULT 'active',
+        views_count INT DEFAULT 0,
+        enquiries_count INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create analytics table for tracking website usage
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS analytics (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        event_type VARCHAR(100) NOT NULL,
+        event_data JSON,
+        ip_address VARCHAR(45),
+        user_agent TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -76,15 +98,25 @@ async function initializeDatabase() {
 
 // API Routes
 
-// Submit enquiry
+// Submit enquiry with analytics tracking
 app.post('/api/enquiries', async (req, res) => {
   try {
     const { name, email, phone, message, property } = req.body;
+    const ip_address = req.ip || req.connection.remoteAddress;
+    const user_agent = req.get('User-Agent');
     
     const connection = await pool.getConnection();
+    
+    // Insert enquiry
     const [result] = await connection.execute(
-      'INSERT INTO enquiries (name, email, phone, message, property) VALUES (?, ?, ?, ?, ?)',
-      [name, email, phone, message, property]
+      'INSERT INTO enquiries (name, email, phone, message, property, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [name, email, phone, message, property, ip_address, user_agent]
+    );
+
+    // Track analytics event
+    await connection.execute(
+      'INSERT INTO analytics (event_type, event_data, ip_address, user_agent) VALUES (?, ?, ?, ?)',
+      ['enquiry_submitted', JSON.stringify({ property, enquiry_id: result.insertId }), ip_address, user_agent]
     );
     
     connection.release();
@@ -114,6 +146,96 @@ app.get('/api/enquiries', async (req, res) => {
   } catch (error) {
     console.error('Error fetching enquiries:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch enquiries' });
+  }
+});
+
+// Analytics endpoint
+app.get('/api/analytics', async (req, res) => {
+  try {
+    const connection = await pool.getConnection();
+    
+    // Get basic counts
+    const [propertiesCount] = await connection.execute('SELECT COUNT(*) as count FROM properties WHERE status = "active"');
+    const [enquiriesCount] = await connection.execute('SELECT COUNT(*) as count FROM enquiries');
+    const [analyticsCount] = await connection.execute('SELECT COUNT(*) as count FROM analytics');
+    
+    // Get enquiries by month
+    const [enquiriesByMonth] = await connection.execute(`
+      SELECT 
+        DATE_FORMAT(created_at, '%Y-%m') as month,
+        COUNT(*) as count 
+      FROM enquiries 
+      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+      GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+      ORDER BY month
+    `);
+
+    // Get properties by type
+    const [propertiesByType] = await connection.execute(`
+      SELECT 
+        type,
+        COUNT(*) as count 
+      FROM properties 
+      WHERE status = 'active'
+      GROUP BY type
+    `);
+
+    // Get properties by location
+    const [propertiesByLocation] = await connection.execute(`
+      SELECT 
+        location,
+        COUNT(*) as count 
+      FROM properties 
+      WHERE status = 'active'
+      GROUP BY location
+      LIMIT 10
+    `);
+
+    connection.release();
+    
+    res.json({
+      totalProperties: propertiesCount[0].count,
+      totalEnquiries: enquiriesCount[0].count,
+      totalAnalyticsEvents: analyticsCount[0].count,
+      enquiriesByMonth,
+      propertiesByType,
+      propertiesByLocation
+    });
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch analytics' });
+  }
+});
+
+// Track page view
+app.post('/api/analytics/pageview', async (req, res) => {
+  try {
+    const { page, propertyId } = req.body;
+    const ip_address = req.ip || req.connection.remoteAddress;
+    const user_agent = req.get('User-Agent');
+    
+    const connection = await pool.getConnection();
+    
+    // Track analytics event
+    await connection.execute(
+      'INSERT INTO analytics (event_type, event_data, ip_address, user_agent) VALUES (?, ?, ?, ?)',
+      ['page_view', JSON.stringify({ page, propertyId }), ip_address, user_agent]
+    );
+
+    // If it's a property view, increment the property views count
+    if (propertyId) {
+      await connection.execute(
+        'UPDATE properties SET views_count = views_count + 1 WHERE id = ?',
+        [propertyId]
+      );
+    }
+    
+    connection.release();
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error tracking page view:', error);
+    res.status(500).json({ success: false, message: 'Failed to track page view' });
   }
 });
 
@@ -237,6 +359,7 @@ initializeDatabase().then(() => {
   app.listen(PORT, () => {
     console.log(`TrueView Reality backend server running on port ${PORT}`);
     console.log('Database connection established');
+    console.log('Admin dashboard available at /admin-dashboard');
     syncPropertiesFromFolder(); // Initial sync
   });
 }).catch(error => {
