@@ -46,6 +46,26 @@ export interface Property {
   enquiries_count?: number;
 }
 
+export interface NewPropertyData {
+  price: string;
+  location: string;
+  type: string;
+  bedrooms: number;
+  bathrooms: number;
+  sqft: number;
+  year_built: number;
+  description: string;
+  features: string[];
+  neighborhood_info: {
+    walkScore?: number;
+    transitScore?: number;
+    bikeScore?: number;
+    schools?: string;
+    shopping?: string;
+    dining?: string;
+  };
+}
+
 // API endpoints for backend communication
 const API_BASE_URL = 'http://localhost:3001/api';
 
@@ -72,6 +92,42 @@ export const databaseAPI = {
     } catch (error) {
       console.error('Error submitting enquiry:', error);
       return false;
+    }
+  },
+
+  // Add new property listing (Admin only)
+  addProperty: async (propertyData: NewPropertyData, images: File[]): Promise<{ success: boolean; id?: number; message?: string }> => {
+    try {
+      const formData = new FormData();
+      
+      // Append property data
+      Object.entries(propertyData).forEach(([key, value]) => {
+        if (typeof value === 'object') {
+          formData.append(key, JSON.stringify(value));
+        } else {
+          formData.append(key, value.toString());
+        }
+      });
+      
+      // Append image files
+      images.forEach((image, index) => {
+        formData.append('images', image);
+      });
+      
+      const response = await fetch(`${API_BASE_URL}/properties`, {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to add property');
+      }
+      
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Error adding property:', error);
+      return { success: false, message: 'Failed to add property' };
     }
   },
 
@@ -117,7 +173,7 @@ export const databaseAPI = {
       if (!response.ok) {
         throw new Error('Failed to fetch property images');
       }
-      
+
       const images = await response.json();
       return images;
     } catch (error) {

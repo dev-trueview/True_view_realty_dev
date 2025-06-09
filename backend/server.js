@@ -1,8 +1,10 @@
+
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
+const multer = require('multer');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -12,11 +14,25 @@ app.use(cors());
 app.use(express.json());
 app.use('/images', express.static(path.join(__dirname, 'property-images')));
 
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, 'property-images'));
+  },
+  filename: function (req, file, cb) {
+    const propertyId = req.body.propertyId || Date.now();
+    const ext = path.extname(file.originalname);
+    cb(null, `${propertyId}_${file.fieldname}_${Date.now()}${ext}`);
+  }
+});
+
+const upload = multer({ storage: storage });
+
 // Database configuration
 const dbConfig = {
   host: 'localhost',
   user: 'root',
-  password: '0844', // Update with your MySQL password
+  password: '0844',
   database: 'trueview_reality',
   port: 3306
 };
@@ -29,7 +45,7 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Database initialization
+// Database initialization with enhanced schema
 async function initializeDatabase() {
   try {
     const connection = await pool.getConnection();
@@ -53,21 +69,23 @@ async function initializeDatabase() {
       )
     `);
     
-    // Create properties table with enhanced schema
+    // Create properties table with enhanced schema for new fields
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS properties (
         id INT AUTO_INCREMENT PRIMARY KEY,
         image VARCHAR(255),
+        images JSON,
         price VARCHAR(100),
         location VARCHAR(255),
         type VARCHAR(100),
         bedrooms INT,
         bathrooms DECIMAL(3,1),
         sqft INT,
+        year_built INT,
         amenities TEXT,
         description TEXT,
-        features TEXT,
-        neighborhood_info TEXT,
+        features JSON,
+        neighborhood_info JSON,
         virtual_tour_url VARCHAR(500),
         status ENUM('active', 'sold', 'pending') DEFAULT 'active',
         views_count INT DEFAULT 0,
@@ -146,6 +164,62 @@ app.get('/api/enquiries', async (req, res) => {
   } catch (error) {
     console.error('Error fetching enquiries:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch enquiries' });
+  }
+});
+
+// Add new property listing (Admin feature)
+app.post('/api/properties', upload.array('images', 10), async (req, res) => {
+  try {
+    const {
+      price, location, type, bedrooms, bathrooms, sqft, year_built,
+      description, features, neighborhood_info
+    } = req.body;
+
+    const connection = await pool.getConnection();
+    
+    // Parse JSON fields
+    const parsedFeatures = typeof features === 'string' ? JSON.parse(features) : features;
+    const parsedNeighborhood = typeof neighborhood_info === 'string' ? JSON.parse(neighborhood_info) : neighborhood_info;
+    
+    // Handle uploaded images
+    const imageUrls = req.files ? req.files.map(file => `/images/${file.filename}`) : [];
+    const primaryImage = imageUrls[0] || null;
+    
+    // Insert new property
+    const [result] = await connection.execute(`
+      INSERT INTO properties (
+        image, images, price, location, type, bedrooms, bathrooms, sqft, 
+        year_built, description, features, neighborhood_info, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
+    `, [
+      primaryImage,
+      JSON.stringify(imageUrls),
+      price,
+      location,
+      type,
+      parseInt(bedrooms),
+      parseFloat(bathrooms),
+      parseInt(sqft),
+      parseInt(year_built),
+      description,
+      JSON.stringify(parsedFeatures),
+      JSON.stringify(parsedNeighborhood)
+    ]);
+
+    connection.release();
+    
+    res.status(201).json({
+      success: true,
+      message: 'Property added successfully',
+      id: result.insertId,
+      images: imageUrls
+    });
+  } catch (error) {
+    console.error('Error adding property:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to add property'
+    });
   }
 });
 
@@ -239,93 +313,48 @@ app.post('/api/analytics/pageview', async (req, res) => {
   }
 });
 
-// Auto-sync properties from folder
-async function syncPropertiesFromFolder() {
-  try {
-    const propertyImagesDir = path.join(__dirname, 'property-images');
-    
-    // Create directory if it doesn't exist
-    try {
-      await fs.access(propertyImagesDir);
-    } catch {
-      await fs.mkdir(propertyImagesDir, { recursive: true });
-      console.log('Created property-images directory');
-    }
-    
-    const files = await fs.readdir(propertyImagesDir);
-    const imageFiles = files.filter(file => 
-      /\.(jpg|jpeg|png|gif|webp)$/i.test(file)
-    );
-    
-    const connection = await pool.getConnection();
-    
-    for (const imageFile of imageFiles) {
-      // Extract property info from filename (format: id_type_location_price.jpg)
-      const fileNameParts = path.parse(imageFile).name.split('_');
-      
-      if (fileNameParts.length >= 4) {
-        const [id, type, location, price] = fileNameParts;
-        
-        // Check if property already exists
-        const [existing] = await connection.execute(
-          'SELECT id FROM properties WHERE id = ?',
-          [parseInt(id)]
-        );
-        
-        if (existing.length === 0) {
-          // Insert new property with default values
-          await connection.execute(`
-            INSERT INTO properties (id, image, price, location, type, bedrooms, bathrooms, sqft, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')
-          `, [
-            parseInt(id),
-            `/images/${imageFile}`,
-            price.replace(/-/g, ' '),
-            location.replace(/-/g, ' '),
-            type.replace(/-/g, ' '),
-            Math.floor(Math.random() * 4) + 2, // Random bedrooms 2-5
-            Math.floor(Math.random() * 3) + 1, // Random bathrooms 1-3
-            Math.floor(Math.random() * 2000) + 1000 // Random sqft 1000-3000
-          ]);
-          
-          console.log(`Added new property: ${imageFile}`);
-        }
-      }
-    }
-    
-    // Remove properties that no longer have corresponding image files
-    const [allProperties] = await connection.execute('SELECT id, image FROM properties');
-    
-    for (const property of allProperties) {
-      const imagePath = path.join(propertyImagesDir, path.basename(property.image));
-      try {
-        await fs.access(imagePath);
-      } catch {
-        // Image file doesn't exist, remove from database
-        await connection.execute('DELETE FROM properties WHERE id = ?', [property.id]);
-        console.log(`Removed property with missing image: ${property.image}`);
-      }
-    }
-    
-    connection.release();
-  } catch (error) {
-    console.error('Error syncing properties:', error);
-  }
-}
-
-// Get all active properties
+// Get all active properties with improved image handling
 app.get('/api/properties', async (req, res) => {
   try {
-    // Sync properties before fetching
-    await syncPropertiesFromFolder();
-    
     const connection = await pool.getConnection();
     const [rows] = await connection.execute(
       'SELECT * FROM properties WHERE status = "active" ORDER BY created_at DESC'
     );
-    connection.release();
     
-    res.json(rows);
+    // Process properties to ensure proper image handling
+    const processedProperties = rows.map(property => {
+      // Parse JSON fields
+      if (property.features && typeof property.features === 'string') {
+        try {
+          property.features = JSON.parse(property.features);
+        } catch (e) {
+          property.features = [];
+        }
+      }
+      
+      if (property.neighborhood_info && typeof property.neighborhood_info === 'string') {
+        try {
+          property.neighborhood_info = JSON.parse(property.neighborhood_info);
+        } catch (e) {
+          property.neighborhood_info = {};
+        }
+      }
+      
+      if (property.images && typeof property.images === 'string') {
+        try {
+          property.images = JSON.parse(property.images);
+        } catch (e) {
+          property.images = property.image ? [property.image] : [];
+        }
+      } else if (!property.images && property.image) {
+        property.images = [property.image];
+      }
+      
+      return property;
+    });
+    
+    connection.release();
+    res.json(processedProperties);
   } catch (error) {
     console.error('Error fetching properties:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch properties' });
@@ -336,14 +365,32 @@ app.get('/api/properties', async (req, res) => {
 app.get('/api/properties/:id/images', async (req, res) => {
   try {
     const propertyId = req.params.id;
-    const propertyImagesDir = path.join(__dirname, 'property-images');
+    const connection = await pool.getConnection();
     
-    const files = await fs.readdir(propertyImagesDir);
-    const propertyImages = files.filter(file => 
-      file.startsWith(`${propertyId}_`) && /\.(jpg|jpeg|png|gif|webp)$/i.test(file)
+    const [rows] = await connection.execute(
+      'SELECT images, image FROM properties WHERE id = ? AND status = "active"',
+      [propertyId]
     );
     
-    const imageUrls = propertyImages.map(file => `/images/${file}`);
+    if (rows.length === 0) {
+      connection.release();
+      return res.status(404).json({ success: false, message: 'Property not found' });
+    }
+    
+    const property = rows[0];
+    let imageUrls = [];
+    
+    if (property.images) {
+      try {
+        imageUrls = JSON.parse(property.images);
+      } catch (e) {
+        imageUrls = property.image ? [property.image] : [];
+      }
+    } else if (property.image) {
+      imageUrls = [property.image];
+    }
+    
+    connection.release();
     res.json(imageUrls);
   } catch (error) {
     console.error('Error fetching property images:', error);
@@ -370,7 +417,7 @@ app.get('/api/properties/:id', async (req, res) => {
     const property = rows[0];
     
     // Parse JSON fields if they exist
-    if (property.features) {
+    if (property.features && typeof property.features === 'string') {
       try {
         property.features = JSON.parse(property.features);
       } catch (e) {
@@ -378,15 +425,7 @@ app.get('/api/properties/:id', async (req, res) => {
       }
     }
     
-    if (property.amenities) {
-      try {
-        property.amenities = JSON.parse(property.amenities);
-      } catch (e) {
-        property.amenities = [];
-      }
-    }
-    
-    if (property.neighborhood_info) {
+    if (property.neighborhood_info && typeof property.neighborhood_info === 'string') {
       try {
         property.neighborhood_info = JSON.parse(property.neighborhood_info);
       } catch (e) {
@@ -394,15 +433,13 @@ app.get('/api/properties/:id', async (req, res) => {
       }
     }
     
-    // Fetch property images
-    const propertyImagesDir = path.join(__dirname, 'property-images');
-    try {
-      const files = await fs.readdir(propertyImagesDir);
-      const propertyImages = files.filter(file => 
-        file.startsWith(`${propertyId}_`) && /\.(jpg|jpeg|png|gif|webp)$/i.test(file)
-      );
-      property.images = propertyImages.map(file => `/images/${file}`);
-    } catch (error) {
+    if (property.images && typeof property.images === 'string') {
+      try {
+        property.images = JSON.parse(property.images);
+      } catch (e) {
+        property.images = property.image ? [property.image] : [];
+      }
+    } else if (!property.images && property.image) {
       property.images = [property.image];
     }
     
@@ -421,16 +458,12 @@ app.get('/api/properties/:id', async (req, res) => {
   }
 });
 
-// Auto-sync properties every 30 seconds
-setInterval(syncPropertiesFromFolder, 30000);
-
 // Initialize database and start server
 initializeDatabase().then(() => {
   app.listen(PORT, () => {
     console.log(`TrueView Reality backend server running on port ${PORT}`);
     console.log('Database connection established');
     console.log('Admin dashboard available at /admin-dashboard');
-    syncPropertiesFromFolder(); // Initial sync
   });
 }).catch(error => {
   console.error('Failed to start server:', error);

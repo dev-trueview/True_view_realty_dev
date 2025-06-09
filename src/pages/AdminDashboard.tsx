@@ -6,10 +6,12 @@ import { databaseAPI } from '@/utils/database';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import AddPropertyForm from '@/components/AddPropertyForm';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { LogOut, Home, Building, Users, Database } from 'lucide-react';
+import { LogOut, Home, Building, Users, Database, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface AnalyticsData {
@@ -26,6 +28,7 @@ const AdminDashboard = () => {
   const { toast } = useToast();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     // Check authentication
@@ -97,6 +100,11 @@ const AdminDashboard = () => {
     navigate('/');
   };
 
+  const handlePropertyAdded = () => {
+    fetchAnalyticsData(); // Refresh data after adding property
+    setActiveTab('overview'); // Switch back to overview
+  };
+
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
   if (loading) {
@@ -130,131 +138,154 @@ const AdminDashboard = () => {
           </Button>
         </div>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-slate-800/50 border-cyan-500/20">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">Total Properties</CardTitle>
-              <Building className="h-4 w-4 text-cyan-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{analyticsData?.totalProperties || 0}</div>
-            </CardContent>
-          </Card>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2 bg-slate-800/50">
+            <TabsTrigger value="overview" className="text-white">
+              <Building className="w-4 h-4 mr-2" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="add-property" className="text-white">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Property
+            </TabsTrigger>
+          </TabsList>
 
-          <Card className="bg-slate-800/50 border-cyan-500/20">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">Total Enquiries</CardTitle>
-              <Users className="h-4 w-4 text-cyan-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{analyticsData?.totalEnquiries || 0}</div>
-            </CardContent>
-          </Card>
+          <TabsContent value="overview" className="space-y-6">
+            {/* Key Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card className="bg-slate-800/50 border-cyan-500/20">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-300">Total Properties</CardTitle>
+                  <Building className="h-4 w-4 text-cyan-400" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-white">{analyticsData?.totalProperties || 0}</div>
+                </CardContent>
+              </Card>
 
-          <Card className="bg-slate-800/50 border-cyan-500/20">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">Active Listings</CardTitle>
-              <Home className="h-4 w-4 text-cyan-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{analyticsData?.totalProperties || 0}</div>
-            </CardContent>
-          </Card>
+              <Card className="bg-slate-800/50 border-cyan-500/20">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-300">Total Enquiries</CardTitle>
+                  <Users className="h-4 w-4 text-cyan-400" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-white">{analyticsData?.totalEnquiries || 0}</div>
+                </CardContent>
+              </Card>
 
-          <Card className="bg-slate-800/50 border-cyan-500/20">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">Database Status</CardTitle>
-              <Database className="h-4 w-4 text-cyan-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-400">Online</div>
-            </CardContent>
-          </Card>
-        </div>
+              <Card className="bg-slate-800/50 border-cyan-500/20">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-300">Active Listings</CardTitle>
+                  <Home className="h-4 w-4 text-cyan-400" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-white">{analyticsData?.totalProperties || 0}</div>
+                </CardContent>
+              </Card>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Property Types Chart */}
-          <Card className="bg-slate-800/50 border-cyan-500/20">
-            <CardHeader>
-              <CardTitle className="text-white">Properties by Type</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={analyticsData?.propertyByType || []}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {analyticsData?.propertyByType.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              <Card className="bg-slate-800/50 border-cyan-500/20">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-300">Database Status</CardTitle>
+                  <Database className="h-4 w-4 text-cyan-400" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-400">Online</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Property Types Chart */}
+              <Card className="bg-slate-800/50 border-cyan-500/20">
+                <CardHeader>
+                  <CardTitle className="text-white">Properties by Type</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={analyticsData?.propertyByType || []}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {analyticsData?.propertyByType.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Enquiries by Month */}
+              <Card className="bg-slate-800/50 border-cyan-500/20">
+                <CardHeader>
+                  <CardTitle className="text-white">Enquiries by Month</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={analyticsData?.enquiriesByMonth || []}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="count" fill="#00C49F" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recent Enquiries Table */}
+            <Card className="bg-slate-800/50 border-cyan-500/20">
+              <CardHeader>
+                <CardTitle className="text-white">Recent Enquiries</CardTitle>
+                <CardDescription className="text-gray-300">Latest customer inquiries</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-gray-300">Name</TableHead>
+                      <TableHead className="text-gray-300">Email</TableHead>
+                      <TableHead className="text-gray-300">Phone</TableHead>
+                      <TableHead className="text-gray-300">Property</TableHead>
+                      <TableHead className="text-gray-300">Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {analyticsData?.recentEnquiries.map((enquiry, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="text-white">{enquiry.name}</TableCell>
+                        <TableCell className="text-gray-300">{enquiry.email}</TableCell>
+                        <TableCell className="text-gray-300">{enquiry.phone}</TableCell>
+                        <TableCell className="text-gray-300">{enquiry.property || 'General'}</TableCell>
+                        <TableCell className="text-gray-300">
+                          {new Date(enquiry.created_at).toLocaleDateString()}
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          {/* Enquiries by Month */}
-          <Card className="bg-slate-800/50 border-cyan-500/20">
-            <CardHeader>
-              <CardTitle className="text-white">Enquiries by Month</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={analyticsData?.enquiriesByMonth || []}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#00C49F" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent Enquiries Table */}
-        <Card className="bg-slate-800/50 border-cyan-500/20">
-          <CardHeader>
-            <CardTitle className="text-white">Recent Enquiries</CardTitle>
-            <CardDescription className="text-gray-300">Latest customer inquiries</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-gray-300">Name</TableHead>
-                  <TableHead className="text-gray-300">Email</TableHead>
-                  <TableHead className="text-gray-300">Phone</TableHead>
-                  <TableHead className="text-gray-300">Property</TableHead>
-                  <TableHead className="text-gray-300">Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {analyticsData?.recentEnquiries.map((enquiry, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="text-white">{enquiry.name}</TableCell>
-                    <TableCell className="text-gray-300">{enquiry.email}</TableCell>
-                    <TableCell className="text-gray-300">{enquiry.phone}</TableCell>
-                    <TableCell className="text-gray-300">{enquiry.property || 'General'}</TableCell>
-                    <TableCell className="text-gray-300">
-                      {new Date(enquiry.created_at).toLocaleDateString()}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+          <TabsContent value="add-property">
+            <AddPropertyForm 
+              onSuccess={handlePropertyAdded}
+              onCancel={() => setActiveTab('overview')}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
 
       <Footer />
