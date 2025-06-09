@@ -18,7 +18,6 @@ import { useProperties } from "@/hooks/useProperties";
 
 const Index = () => {
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
-  const [showAutoPopup, setShowAutoPopup] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
   const [searchLocation, setSearchLocation] = useState("");
@@ -38,16 +37,7 @@ const Index = () => {
     }
   }, []);
 
-  // Auto popup every minute (only if user hasn't submitted enquiry)
-  useEffect(() => {
-    if (hasSubmittedEnquiry) return;
-
-    const interval = setInterval(() => {
-      setShowAutoPopup(true);
-    }, 60000); // 1 minute
-
-    return () => clearInterval(interval);
-  }, [hasSubmittedEnquiry]);
+  // Remove the aggressive auto-popup that was causing flickering
 
   const filteredProperties = properties.filter(property => {
     const matchesLocation = !searchLocation || property.location.toLowerCase().includes(searchLocation.toLowerCase());
@@ -75,7 +65,6 @@ const Index = () => {
       description: "Our agent will contact you within 24 hours.",
     });
     setShowEnquiryModal(false);
-    setShowAutoPopup(false);
     setSelectedProperty(null);
   };
 
@@ -219,22 +208,6 @@ const Index = () => {
             property={selectedProperty}
             onSubmit={handleFormSubmit}
             onClose={() => setShowEnquiryModal(false)}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Auto Popup */}
-      <Dialog open={showAutoPopup} onOpenChange={setShowAutoPopup}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-center">Connect with Our Professional Agent</DialogTitle>
-          </DialogHeader>
-          <div className="text-center mb-4">
-            <p className="text-gray-600">Connect with our professional agent and find your dream home.</p>
-          </div>
-          <EnquiryForm 
-            onSubmit={handleFormSubmit}
-            onClose={() => setShowAutoPopup(false)}
           />
         </DialogContent>
       </Dialog>

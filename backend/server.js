@@ -1,4 +1,3 @@
-
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
@@ -10,9 +9,23 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:5173'],
+  credentials: true
+}));
+app.use(express.json({ limit: '10mb' }));
 app.use('/images', express.static(path.join(__dirname, 'property-images')));
+
+// Ensure property-images directory exists
+const ensureDirectoryExists = async () => {
+  const dir = path.join(__dirname, 'property-images');
+  try {
+    await fs.access(dir);
+  } catch (error) {
+    await fs.mkdir(dir, { recursive: true });
+    console.log('Created property-images directory');
+  }
+};
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -26,7 +39,20 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+    files: 10
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
 
 // Database configuration
 const dbConfig = {
@@ -42,7 +68,9 @@ const pool = mysql.createPool({
   ...dbConfig,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  acquireTimeout: 60000,
+  timeout: 60000
 });
 
 // Database initialization with enhanced schema
@@ -111,19 +139,31 @@ async function initializeDatabase() {
     console.log('Database initialized successfully');
   } catch (error) {
     console.error('Database initialization failed:', error);
+    throw error;
   }
 }
+
+// Error handling middleware
+const handleError = (res, error, message = 'Internal server error') => {
+  console.error(error);
+  res.status(500).json({ 
+    success: false, 
+    message: message,
+    error: process.env.NODE_ENV === 'development' ? error.message : undefined
+  });
+};
 
 // API Routes
 
 // Submit enquiry with analytics tracking
 app.post('/api/enquiries', async (req, res) => {
+  let connection;
   try {
     const { name, email, phone, message, property } = req.body;
     const ip_address = req.ip || req.connection.remoteAddress;
     const user_agent = req.get('User-Agent');
     
-    const connection = await pool.getConnection();
+    connection = await pool.getConnection();
     
     // Insert enquiry
     const [result] = await connection.execute(
@@ -137,45 +177,42 @@ app.post('/api/enquiries', async (req, res) => {
       ['enquiry_submitted', JSON.stringify({ property, enquiry_id: result.insertId }), ip_address, user_agent]
     );
     
-    connection.release();
-    
     res.status(201).json({ 
       success: true, 
       message: 'Enquiry submitted successfully',
       id: result.insertId 
     });
   } catch (error) {
-    console.error('Error submitting enquiry:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to submit enquiry' 
-    });
+    handleError(res, error, 'Failed to submit enquiry');
+  } finally {
+    if (connection) connection.release();
   }
 });
 
 // Get all enquiries
 app.get('/api/enquiries', async (req, res) => {
+  let connection;
   try {
-    const connection = await pool.getConnection();
+    connection = await pool.getConnection();
     const [rows] = await connection.execute('SELECT * FROM enquiries ORDER BY created_at DESC');
-    connection.release();
-    
     res.json(rows);
   } catch (error) {
-    console.error('Error fetching enquiries:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch enquiries' });
+    handleError(res, error, 'Failed to fetch enquiries');
+  } finally {
+    if (connection) connection.release();
   }
 });
 
 // Add new property listing (Admin feature)
 app.post('/api/properties', upload.array('images', 10), async (req, res) => {
+  let connection;
   try {
     const {
       price, location, type, bedrooms, bathrooms, sqft, year_built,
       description, features, neighborhood_info
     } = req.body;
 
-    const connection = await pool.getConnection();
+    connection = await pool.getConnection();
     
     // Parse JSON fields
     const parsedFeatures = typeof features === 'string' ? JSON.parse(features) : features;
@@ -205,8 +242,6 @@ app.post('/api/properties', upload.array('images', 10), async (req, res) => {
       JSON.stringify(parsedFeatures),
       JSON.stringify(parsedNeighborhood)
     ]);
-
-    connection.release();
     
     res.status(201).json({
       success: true,
@@ -215,115 +250,24 @@ app.post('/api/properties', upload.array('images', 10), async (req, res) => {
       images: imageUrls
     });
   } catch (error) {
-    console.error('Error adding property:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to add property'
-    });
-  }
-});
-
-// Analytics endpoint
-app.get('/api/analytics', async (req, res) => {
-  try {
-    const connection = await pool.getConnection();
-    
-    // Get basic counts
-    const [propertiesCount] = await connection.execute('SELECT COUNT(*) as count FROM properties WHERE status = "active"');
-    const [enquiriesCount] = await connection.execute('SELECT COUNT(*) as count FROM enquiries');
-    const [analyticsCount] = await connection.execute('SELECT COUNT(*) as count FROM analytics');
-    
-    // Get enquiries by month
-    const [enquiriesByMonth] = await connection.execute(`
-      SELECT 
-        DATE_FORMAT(created_at, '%Y-%m') as month,
-        COUNT(*) as count 
-      FROM enquiries 
-      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
-      GROUP BY DATE_FORMAT(created_at, '%Y-%m')
-      ORDER BY month
-    `);
-
-    // Get properties by type
-    const [propertiesByType] = await connection.execute(`
-      SELECT 
-        type,
-        COUNT(*) as count 
-      FROM properties 
-      WHERE status = 'active'
-      GROUP BY type
-    `);
-
-    // Get properties by location
-    const [propertiesByLocation] = await connection.execute(`
-      SELECT 
-        location,
-        COUNT(*) as count 
-      FROM properties 
-      WHERE status = 'active'
-      GROUP BY location
-      LIMIT 10
-    `);
-
-    connection.release();
-    
-    res.json({
-      totalProperties: propertiesCount[0].count,
-      totalEnquiries: enquiriesCount[0].count,
-      totalAnalyticsEvents: analyticsCount[0].count,
-      enquiriesByMonth,
-      propertiesByType,
-      propertiesByLocation
-    });
-  } catch (error) {
-    console.error('Error fetching analytics:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch analytics' });
-  }
-});
-
-// Track page view
-app.post('/api/analytics/pageview', async (req, res) => {
-  try {
-    const { page, propertyId } = req.body;
-    const ip_address = req.ip || req.connection.remoteAddress;
-    const user_agent = req.get('User-Agent');
-    
-    const connection = await pool.getConnection();
-    
-    // Track analytics event
-    await connection.execute(
-      'INSERT INTO analytics (event_type, event_data, ip_address, user_agent) VALUES (?, ?, ?, ?)',
-      ['page_view', JSON.stringify({ page, propertyId }), ip_address, user_agent]
-    );
-
-    // If it's a property view, increment the property views count
-    if (propertyId) {
-      await connection.execute(
-        'UPDATE properties SET views_count = views_count + 1 WHERE id = ?',
-        [propertyId]
-      );
-    }
-    
-    connection.release();
-    
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error tracking page view:', error);
-    res.status(500).json({ success: false, message: 'Failed to track page view' });
+    handleError(res, error, 'Failed to add property');
+  } finally {
+    if (connection) connection.release();
   }
 });
 
 // Get all active properties with improved image handling
 app.get('/api/properties', async (req, res) => {
+  let connection;
   try {
-    const connection = await pool.getConnection();
+    connection = await pool.getConnection();
     const [rows] = await connection.execute(
       'SELECT * FROM properties WHERE status = "active" ORDER BY created_at DESC'
     );
     
     // Process properties to ensure proper image handling
     const processedProperties = rows.map(property => {
-      // Parse JSON fields
+      // Parse JSON fields safely
       if (property.features && typeof property.features === 'string') {
         try {
           property.features = JSON.parse(property.features);
@@ -353,11 +297,11 @@ app.get('/api/properties', async (req, res) => {
       return property;
     });
     
-    connection.release();
     res.json(processedProperties);
   } catch (error) {
-    console.error('Error fetching properties:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch properties' });
+    handleError(res, error, 'Failed to fetch properties');
+  } finally {
+    if (connection) connection.release();
   }
 });
 
@@ -458,13 +402,111 @@ app.get('/api/properties/:id', async (req, res) => {
   }
 });
 
-// Initialize database and start server
-initializeDatabase().then(() => {
-  app.listen(PORT, () => {
-    console.log(`TrueView Reality backend server running on port ${PORT}`);
-    console.log('Database connection established');
-    console.log('Admin dashboard available at /admin-dashboard');
-  });
-}).catch(error => {
-  console.error('Failed to start server:', error);
+// Analytics endpoint
+app.get('/api/analytics', async (req, res) => {
+  try {
+    const connection = await pool.getConnection();
+    
+    // Get basic counts
+    const [propertiesCount] = await connection.execute('SELECT COUNT(*) as count FROM properties WHERE status = "active"');
+    const [enquiriesCount] = await connection.execute('SELECT COUNT(*) as count FROM enquiries');
+    const [analyticsCount] = await connection.execute('SELECT COUNT(*) as count FROM analytics');
+    
+    // Get enquiries by month
+    const [enquiriesByMonth] = await connection.execute(`
+      SELECT 
+        DATE_FORMAT(created_at, '%Y-%m') as month,
+        COUNT(*) as count 
+      FROM enquiries 
+      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+      GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+      ORDER BY month
+    `);
+
+    // Get properties by type
+    const [propertiesByType] = await connection.execute(`
+      SELECT 
+        type,
+        COUNT(*) as count 
+      FROM properties 
+      WHERE status = 'active'
+      GROUP BY type
+    `);
+
+    // Get properties by location
+    const [propertiesByLocation] = await connection.execute(`
+      SELECT 
+        location,
+        COUNT(*) as count 
+      FROM properties 
+      WHERE status = 'active'
+      GROUP BY location
+      LIMIT 10
+    `);
+
+    connection.release();
+    
+    res.json({
+      totalProperties: propertiesCount[0].count,
+      totalEnquiries: enquiriesCount[0].count,
+      totalAnalyticsEvents: analyticsCount[0].count,
+      enquiriesByMonth,
+      propertiesByType,
+      propertiesByLocation
+    });
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch analytics' });
+  }
 });
+
+// Track page view
+app.post('/api/analytics/pageview', async (req, res) => {
+  try {
+    const { page, propertyId } = req.body;
+    const ip_address = req.ip || req.connection.remoteAddress;
+    const user_agent = req.get('User-Agent');
+    
+    const connection = await pool.getConnection();
+    
+    // Track analytics event
+    await connection.execute(
+      'INSERT INTO analytics (event_type, event_data, ip_address, user_agent) VALUES (?, ?, ?, ?)',
+      ['page_view', JSON.stringify({ page, propertyId }), ip_address, user_agent]
+    );
+
+    // If it's a property view, increment the property views count
+    if (propertyId) {
+      await connection.execute(
+        'UPDATE properties SET views_count = views_count + 1 WHERE id = ?',
+        [propertyId]
+      );
+    }
+    
+    connection.release();
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error tracking page view:', error);
+    res.status(500).json({ success: false, message: 'Failed to track page view' });
+  }
+});
+
+// Initialize database and start server
+const startServer = async () => {
+  try {
+    await ensureDirectoryExists();
+    await initializeDatabase();
+    
+    app.listen(PORT, () => {
+      console.log(`TrueView Reality backend server running on port ${PORT}`);
+      console.log('Database connection established');
+      console.log('Admin dashboard available at /admin-dashboard');
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();

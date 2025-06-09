@@ -69,6 +69,10 @@ export interface NewPropertyData {
 // API endpoints for backend communication
 const API_BASE_URL = 'http://localhost:3001/api';
 
+// Add simple caching to prevent redundant requests
+const cache = new Map();
+const CACHE_DURATION = 30000; // 30 seconds
+
 export const databaseAPI = {
   // Submit enquiry to database
   submitEnquiry: async (enquiryData: EnquiryData): Promise<boolean> => {
@@ -88,6 +92,8 @@ export const databaseAPI = {
         throw new Error('Failed to submit enquiry');
       }
       
+      // Clear properties cache after enquiry submission
+      cache.delete('properties');
       return true;
     } catch (error) {
       console.error('Error submitting enquiry:', error);
@@ -110,7 +116,7 @@ export const databaseAPI = {
       });
       
       // Append image files
-      images.forEach((image, index) => {
+      images.forEach((image) => {
         formData.append('images', image);
       });
       
@@ -124,6 +130,8 @@ export const databaseAPI = {
       }
       
       const result = await response.json();
+      // Clear cache after adding property
+      cache.delete('properties');
       return result;
     } catch (error) {
       console.error('Error adding property:', error);
@@ -131,8 +139,15 @@ export const databaseAPI = {
     }
   },
 
-  // Fetch active properties from database
+  // Fetch active properties from database with caching
   fetchActiveProperties: async (): Promise<Property[]> => {
+    const cacheKey = 'properties';
+    const cached = cache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return cached.data;
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/properties`);
       
@@ -141,6 +156,13 @@ export const databaseAPI = {
       }
       
       const properties = await response.json();
+      
+      // Cache the results
+      cache.set(cacheKey, {
+        data: properties,
+        timestamp: Date.now()
+      });
+      
       return properties;
     } catch (error) {
       console.error('Error fetching properties:', error);
