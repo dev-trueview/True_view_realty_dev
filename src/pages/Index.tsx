@@ -24,6 +24,7 @@ const Index = () => {
   const [priceRange, setPriceRange] = useState("");
   const [propertyType, setPropertyType] = useState("");
   const [hasSubmittedEnquiry, setHasSubmittedEnquiry] = useState(false);
+  const [showAutoPopup, setShowAutoPopup] = useState(false);
   const { toast } = useToast();
 
   // Use the custom hook to fetch properties from database
@@ -37,7 +38,25 @@ const Index = () => {
     }
   }, []);
 
-  // Remove the aggressive auto-popup that was causing flickering
+  // Auto popup functionality - show every minute unless user has submitted enquiry
+  useEffect(() => {
+    if (hasSubmittedEnquiry) return;
+
+    const showPopup = () => {
+      if (!showEnquiryModal && !showDetailsModal && !hasSubmittedEnquiry) {
+        setShowAutoPopup(true);
+      }
+    };
+
+    // Show popup after 1 minute initially, then every minute
+    const initialTimeout = setTimeout(showPopup, 60000); // 1 minute
+    const interval = setInterval(showPopup, 60000); // Every minute
+
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
+  }, [hasSubmittedEnquiry, showEnquiryModal, showDetailsModal]);
 
   const filteredProperties = properties.filter(property => {
     const matchesLocation = !searchLocation || property.location.toLowerCase().includes(searchLocation.toLowerCase());
@@ -48,6 +67,13 @@ const Index = () => {
   const handleEnquiry = (property: any) => {
     setSelectedProperty(property);
     setShowEnquiryModal(true);
+    setShowAutoPopup(false); // Close auto popup if open
+  };
+
+  const handleAutoPopupEnquiry = () => {
+    setSelectedProperty(null); // No specific property for auto popup
+    setShowEnquiryModal(true);
+    setShowAutoPopup(false);
   };
 
   const handleViewDetails = (property: any) => {
@@ -64,6 +90,16 @@ const Index = () => {
       title: "Enquiry Submitted Successfully!",
       description: "Our agent will contact you within 24 hours.",
     });
+    setShowEnquiryModal(false);
+    setShowAutoPopup(false);
+    setSelectedProperty(null);
+  };
+
+  const handleCloseAutoPopup = () => {
+    setShowAutoPopup(false);
+  };
+
+  const handleCloseEnquiryModal = () => {
     setShowEnquiryModal(false);
     setSelectedProperty(null);
   };
@@ -198,6 +234,35 @@ const Index = () => {
         property={selectedProperty}
       />
 
+      {/* Auto Lead Capture Popup */}
+      <Dialog open={showAutoPopup} onOpenChange={setShowAutoPopup}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">🏠 Find Your Dream Property!</DialogTitle>
+          </DialogHeader>
+          <div className="text-center space-y-4">
+            <p className="text-gray-600">
+              Get personalized property recommendations and exclusive listings delivered to your inbox.
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={handleCloseAutoPopup}
+                className="flex-1"
+              >
+                Maybe Later
+              </Button>
+              <Button
+                onClick={handleAutoPopupEnquiry}
+                className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+              >
+                Get Started
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Enquiry Modal */}
       <Dialog open={showEnquiryModal} onOpenChange={setShowEnquiryModal}>
         <DialogContent className="sm:max-w-md">
@@ -207,7 +272,7 @@ const Index = () => {
           <EnquiryForm 
             property={selectedProperty}
             onSubmit={handleFormSubmit}
-            onClose={() => setShowEnquiryModal(false)}
+            onClose={handleCloseEnquiryModal}
           />
         </DialogContent>
       </Dialog>
