@@ -6,12 +6,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { adminAuth } from '@/utils/adminAuth';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { Settings } from 'lucide-react';
+import { Settings, Eye, EyeOff } from 'lucide-react';
 
 const AdminLogin = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -21,32 +22,54 @@ const AdminLogin = () => {
     setIsLoading(true);
 
     try {
+      // Add small delay to prevent rapid-fire attempts
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log('Attempting login with:', { username: username.trim() });
+      
       if (adminAuth.authenticate(username, password)) {
-        adminAuth.createSession();
-        toast({
-          title: "Login Successful",
-          description: "Welcome to the admin dashboard",
-        });
-        setIsOpen(false);
-        navigate('/admin-dashboard');
+        const sessionCreated = adminAuth.createSession();
+        
+        if (sessionCreated) {
+          toast({
+            title: "Login Successful",
+            description: "Welcome to the admin dashboard",
+          });
+          setIsOpen(false);
+          setUsername('');
+          setPassword('');
+          navigate('/admin-dashboard');
+        } else {
+          toast({
+            title: "Session Error",
+            description: "Failed to create admin session. Please try again.",
+            variant: "destructive",
+          });
+        }
       } else {
         toast({
           title: "Login Failed",
-          description: "Invalid credentials",
+          description: "Invalid username or password. Please check your credentials and try again.",
           variant: "destructive",
         });
       }
     } catch (error) {
+      console.error('Login error:', error);
       toast({
-        title: "Error",
-        description: "An error occurred during login",
+        title: "Login Error",
+        description: "An unexpected error occurred during login. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    setIsLoading(false);
+  const handleClose = () => {
+    setIsOpen(false);
     setUsername('');
     setPassword('');
+    setShowPassword(false);
   };
 
   return (
@@ -61,7 +84,7 @@ const AdminLogin = () => {
           <Settings className="w-4 h-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md bg-slate-900 border-gray-700">
+      <DialogContent className="sm:max-w-md bg-slate-900 border-gray-700" onInteractOutside={handleClose}>
         <DialogHeader>
           <DialogTitle className="text-cyan-400">Admin Access</DialogTitle>
         </DialogHeader>
@@ -74,17 +97,28 @@ const AdminLogin = () => {
               onChange={(e) => setUsername(e.target.value)}
               className="bg-slate-800/50 border-gray-600 text-white"
               required
+              autoComplete="username"
             />
           </div>
-          <div>
+          <div className="relative">
             <Input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="bg-slate-800/50 border-gray-600 text-white"
+              className="bg-slate-800/50 border-gray-600 text-white pr-10"
               required
+              autoComplete="current-password"
             />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-white"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </Button>
           </div>
           <Button
             type="submit"

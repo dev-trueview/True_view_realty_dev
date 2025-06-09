@@ -1,14 +1,13 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, X, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { databaseAPI, NewPropertyData } from '@/utils/database';
+import FormFieldWithTooltip from './FormFieldWithTooltip';
 
 interface AddPropertyFormProps {
   onSuccess?: () => void;
@@ -167,31 +166,43 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-gray-300">Price Range</Label>
+            <FormFieldWithTooltip
+              label="Price Range"
+              tooltip="Enter the property price range, e.g., '$750,000 - $850,000' or '$1.2M'. Include currency symbol."
+              htmlFor="price"
+            >
               <Input
+                id="price"
                 placeholder="e.g., $750,000 - $850,000"
                 value={formData.price}
                 onChange={(e) => handleInputChange('price', e.target.value)}
                 className="bg-slate-800/50 border-gray-600 text-white"
                 required
               />
-            </div>
-            <div>
-              <Label className="text-gray-300">Location</Label>
+            </FormFieldWithTooltip>
+            
+            <FormFieldWithTooltip
+              label="Location"
+              tooltip="Enter the neighborhood or area name, e.g., 'Downtown Seattle', 'Manhattan Upper East Side'"
+              htmlFor="location"
+            >
               <Input
+                id="location"
                 placeholder="e.g., Downtown Seattle"
                 value={formData.location}
                 onChange={(e) => handleInputChange('location', e.target.value)}
                 className="bg-slate-800/50 border-gray-600 text-white"
                 required
               />
-            </div>
+            </FormFieldWithTooltip>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-gray-300">Property Type</Label>
+            <FormFieldWithTooltip
+              label="Property Type"
+              tooltip="Select the type of property from the dropdown options"
+              htmlFor="type"
+            >
               <Select value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
                 <SelectTrigger className="bg-slate-800/50 border-gray-600 text-white">
                   <SelectValue placeholder="Select type" />
@@ -204,46 +215,69 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
                   <SelectItem value="Penthouse">Penthouse</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div>
-              <Label className="text-gray-300">Year Built</Label>
+            </FormFieldWithTooltip>
+            
+            <FormFieldWithTooltip
+              label="Year Built"
+              tooltip="Enter the year the property was constructed (4-digit year, e.g., 2020)"
+              htmlFor="year_built"
+            >
               <Input
+                id="year_built"
                 type="number"
+                min="1800"
+                max={new Date().getFullYear() + 2}
                 value={formData.year_built}
                 onChange={(e) => handleInputChange('year_built', parseInt(e.target.value))}
                 className="bg-slate-800/50 border-gray-600 text-white"
                 required
               />
-            </div>
+            </FormFieldWithTooltip>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label className="text-gray-300">Bedrooms</Label>
+            <FormFieldWithTooltip
+              label="Bedrooms"
+              tooltip="Number of bedrooms (minimum 1)"
+              htmlFor="bedrooms"
+            >
               <Input
+                id="bedrooms"
                 type="number"
                 min="1"
+                max="20"
                 value={formData.bedrooms}
                 onChange={(e) => handleInputChange('bedrooms', parseInt(e.target.value))}
                 className="bg-slate-800/50 border-gray-600 text-white"
                 required
               />
-            </div>
-            <div>
-              <Label className="text-gray-300">Bathrooms</Label>
+            </FormFieldWithTooltip>
+            
+            <FormFieldWithTooltip
+              label="Bathrooms"
+              tooltip="Number of bathrooms (can include half baths, e.g., 2.5)"
+              htmlFor="bathrooms"
+            >
               <Input
+                id="bathrooms"
                 type="number"
                 min="1"
+                max="20"
                 step="0.5"
                 value={formData.bathrooms}
                 onChange={(e) => handleInputChange('bathrooms', parseFloat(e.target.value))}
                 className="bg-slate-800/50 border-gray-600 text-white"
                 required
               />
-            </div>
-            <div>
-              <Label className="text-gray-300">Square Feet</Label>
+            </FormFieldWithTooltip>
+            
+            <FormFieldWithTooltip
+              label="Square Feet"
+              tooltip="Total living area in square feet (numbers only, e.g., 1500)"
+              htmlFor="sqft"
+            >
               <Input
+                id="sqft"
                 type="number"
                 min="1"
                 value={formData.sqft}
@@ -251,24 +285,30 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
                 className="bg-slate-800/50 border-gray-600 text-white"
                 required
               />
-            </div>
+            </FormFieldWithTooltip>
           </div>
 
           {/* Description */}
-          <div>
-            <Label className="text-gray-300">Description</Label>
+          <FormFieldWithTooltip
+            label="Description"
+            tooltip="Detailed description of the property. Include highlights, unique features, and selling points (minimum 50 characters)"
+            htmlFor="description"
+          >
             <Textarea
+              id="description"
               placeholder="Detailed property description..."
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               className="bg-slate-800/50 border-gray-600 text-white min-h-[100px]"
               required
             />
-          </div>
+          </FormFieldWithTooltip>
 
           {/* Features */}
-          <div>
-            <Label className="text-gray-300">Features</Label>
+          <FormFieldWithTooltip
+            label="Features"
+            tooltip="List key property features. Each feature should be specific and detailed (e.g., 'Granite countertops in kitchen', 'Walk-in closet in master bedroom')"
+          >
             <div className="space-y-2">
               {features.map((feature, index) => (
                 <div key={index} className="flex gap-2">
@@ -301,15 +341,21 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
                 Add Feature
               </Button>
             </div>
-          </div>
+          </FormFieldWithTooltip>
 
           {/* Neighborhood Info */}
-          <div>
-            <Label className="text-gray-300">Neighborhood Information</Label>
+          <FormFieldWithTooltip
+            label="Neighborhood Information"
+            tooltip="Provide neighborhood details to help buyers understand the area's livability and amenities"
+          >
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-              <div>
-                <Label className="text-sm text-gray-400">Walk Score (0-100)</Label>
+              <FormFieldWithTooltip
+                label="Walk Score (0-100)"
+                tooltip="Walkability rating: 0-24 (Car-dependent), 25-49 (Some errands), 50-69 (Somewhat walkable), 70-89 (Very walkable), 90-100 (Walker's paradise)"
+                htmlFor="walkScore"
+              >
                 <Input
+                  id="walkScore"
                   type="number"
                   min="0"
                   max="100"
@@ -317,10 +363,15 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
                   onChange={(e) => handleNeighborhoodChange('walkScore', parseInt(e.target.value))}
                   className="bg-slate-800/50 border-gray-600 text-white"
                 />
-              </div>
-              <div>
-                <Label className="text-sm text-gray-400">Transit Score (0-100)</Label>
+              </FormFieldWithTooltip>
+              
+              <FormFieldWithTooltip
+                label="Transit Score (0-100)"
+                tooltip="Public transportation convenience: 0-24 (Minimal), 25-49 (Some), 50-69 (Good), 70-89 (Excellent), 90-100 (Paradise)"
+                htmlFor="transitScore"
+              >
                 <Input
+                  id="transitScore"
                   type="number"
                   min="0"
                   max="100"
@@ -328,10 +379,15 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
                   onChange={(e) => handleNeighborhoodChange('transitScore', parseInt(e.target.value))}
                   className="bg-slate-800/50 border-gray-600 text-white"
                 />
-              </div>
-              <div>
-                <Label className="text-sm text-gray-400">Bike Score (0-100)</Label>
+              </FormFieldWithTooltip>
+              
+              <FormFieldWithTooltip
+                label="Bike Score (0-100)"
+                tooltip="Bikeability rating: 0-24 (Not bikeable), 25-49 (Some bike infrastructure), 50-69 (Bikeable), 70-89 (Very bikeable), 90-100 (Biker's paradise)"
+                htmlFor="bikeScore"
+              >
                 <Input
+                  id="bikeScore"
                   type="number"
                   min="0"
                   max="100"
@@ -339,42 +395,58 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
                   onChange={(e) => handleNeighborhoodChange('bikeScore', parseInt(e.target.value))}
                   className="bg-slate-800/50 border-gray-600 text-white"
                 />
-              </div>
+              </FormFieldWithTooltip>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              <div>
-                <Label className="text-sm text-gray-400">Schools</Label>
+              <FormFieldWithTooltip
+                label="Schools"
+                tooltip="Describe local school quality (e.g., 'Excellent', 'Good', 'Top-rated district')"
+                htmlFor="schools"
+              >
                 <Input
+                  id="schools"
                   placeholder="e.g., Excellent"
                   value={formData.neighborhood_info.schools}
                   onChange={(e) => handleNeighborhoodChange('schools', e.target.value)}
                   className="bg-slate-800/50 border-gray-600 text-white"
                 />
-              </div>
-              <div>
-                <Label className="text-sm text-gray-400">Shopping</Label>
+              </FormFieldWithTooltip>
+              
+              <FormFieldWithTooltip
+                label="Shopping"
+                tooltip="Describe shopping options nearby (e.g., 'World-class', 'Convenient', 'Mall within walking distance')"
+                htmlFor="shopping"
+              >
                 <Input
+                  id="shopping"
                   placeholder="e.g., World-class"
                   value={formData.neighborhood_info.shopping}
                   onChange={(e) => handleNeighborhoodChange('shopping', e.target.value)}
                   className="bg-slate-800/50 border-gray-600 text-white"
                 />
-              </div>
-              <div>
-                <Label className="text-sm text-gray-400">Dining</Label>
+              </FormFieldWithTooltip>
+              
+              <FormFieldWithTooltip
+                label="Dining"
+                tooltip="Describe dining and restaurant options (e.g., 'Outstanding', 'Diverse options', 'Fine dining available')"
+                htmlFor="dining"
+              >
                 <Input
+                  id="dining"
                   placeholder="e.g., Outstanding"
                   value={formData.neighborhood_info.dining}
                   onChange={(e) => handleNeighborhoodChange('dining', e.target.value)}
                   className="bg-slate-800/50 border-gray-600 text-white"
                 />
-              </div>
+              </FormFieldWithTooltip>
             </div>
-          </div>
+          </FormFieldWithTooltip>
 
           {/* Image Upload */}
-          <div>
-            <Label className="text-gray-300">Property Images (Max 10)</Label>
+          <FormFieldWithTooltip
+            label="Property Images (Max 10)"
+            tooltip="Upload high-quality images of the property. Supported formats: JPG, PNG, WebP. Recommended size: 1920x1080 or higher. First image will be the main listing photo."
+          >
             <div className="mt-2">
               <input
                 type="file"
@@ -417,7 +489,7 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
                 ))}
               </div>
             )}
-          </div>
+          </FormFieldWithTooltip>
 
           {/* Submit Buttons */}
           <div className="flex gap-4 pt-4">
