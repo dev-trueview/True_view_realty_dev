@@ -74,6 +74,12 @@ const BACKEND_URL = 'http://localhost:3001';
 const cache = new Map();
 const CACHE_DURATION = 30000; // 30 seconds
 
+// Check if we're in Lovable environment (no backend available)
+const isLovableEnvironment = () => {
+  return window.location.hostname.includes('lovableproject.com') || 
+         window.location.hostname.includes('lovable.dev');
+};
+
 // Helper function to process image URLs
 const processImageUrl = (imagePath: string): string => {
   if (!imagePath) return '/placeholder.svg';
@@ -114,9 +120,35 @@ const processPropertyImages = (property: any): any => {
   return processedProperty;
 };
 
+// Mock successful property addition for demo purposes
+const mockSuccessfulPropertyAddition = async (propertyData: NewPropertyData, images: File[]): Promise<{ success: boolean; id?: number; message?: string }> => {
+  console.log('Mock: Adding property to demo environment');
+  console.log('Property data:', propertyData);
+  console.log('Images:', images.length);
+  
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // Generate a mock ID
+  const mockId = Date.now();
+  
+  console.log('Mock: Property added successfully with ID:', mockId);
+  
+  return {
+    success: true,
+    id: mockId,
+    message: 'Property added successfully (Demo Mode - No backend connected)'
+  };
+};
+
 export const databaseAPI = {
   // Submit enquiry to database with enhanced error handling
   submitEnquiry: async (enquiryData: EnquiryData): Promise<boolean> => {
+    if (isLovableEnvironment()) {
+      console.log('Demo Mode: Enquiry would be submitted:', enquiryData);
+      return true;
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/enquiries`, {
         method: 'POST',
@@ -143,8 +175,13 @@ export const databaseAPI = {
     }
   },
 
-  // Enhanced property addition with better file handling and debugging
+  // Enhanced property addition with better error handling and demo mode support
   addProperty: async (propertyData: NewPropertyData, images: File[]): Promise<{ success: boolean; id?: number; message?: string }> => {
+    // Check if we're in Lovable environment (demo mode)
+    if (isLovableEnvironment()) {
+      return await mockSuccessfulPropertyAddition(propertyData, images);
+    }
+
     try {
       console.log('Starting property addition process');
       console.log('Property data:', propertyData);
@@ -215,6 +252,15 @@ export const databaseAPI = {
       };
     } catch (error) {
       console.error('Error adding property:', error);
+      
+      // If it's a network error and we're not in demo mode, suggest backend connection
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        return { 
+          success: false, 
+          message: 'Backend server not available. Please ensure the backend server is running on localhost:3001 or switch to demo mode.'
+        };
+      }
+      
       return { 
         success: false, 
         message: error instanceof Error ? error.message : 'Failed to add property'
@@ -229,6 +275,13 @@ export const databaseAPI = {
     
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
       return cached.data;
+    }
+
+    // If in Lovable environment, return fallback data immediately
+    if (isLovableEnvironment()) {
+      console.log('Demo Mode: Using fallback properties');
+      const { fallbackProperties } = await import('@/data/fallbackProperties');
+      return fallbackProperties;
     }
 
     try {
@@ -259,12 +312,20 @@ export const databaseAPI = {
       return processedProperties;
     } catch (error) {
       console.error('Error fetching properties:', error);
-      return [];
+      // Fallback to demo data if backend fails
+      const { fallbackProperties } = await import('@/data/fallbackProperties');
+      return fallbackProperties;
     }
   },
 
   // Enhanced property details fetching
   fetchPropertyDetails: async (propertyId: number): Promise<Property | null> => {
+    if (isLovableEnvironment()) {
+      console.log('Demo Mode: Fetching property details for ID:', propertyId);
+      const { fallbackProperties } = await import('@/data/fallbackProperties');
+      return fallbackProperties.find(p => p.id === propertyId) || null;
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/properties/${propertyId}`, {
         headers: {
@@ -286,6 +347,11 @@ export const databaseAPI = {
 
   // Enhanced image fetching
   fetchPropertyImages: async (propertyId: number): Promise<string[]> => {
+    if (isLovableEnvironment()) {
+      console.log('Demo Mode: Fetching images for property ID:', propertyId);
+      return ['/placeholder.svg'];
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/properties/${propertyId}/images`, {
         headers: {
@@ -301,12 +367,17 @@ export const databaseAPI = {
       return images.map(processImageUrl);
     } catch (error) {
       console.error('Error fetching property images:', error);
-      return [];
+      return ['/placeholder.svg'];
     }
   },
 
   // Test connection to backend
   testConnection: async (): Promise<boolean> => {
+    if (isLovableEnvironment()) {
+      console.log('Demo Mode: Backend connection test skipped');
+      return false;
+    }
+
     try {
       const response = await fetch(`${BACKEND_URL}/api/health`, {
         method: 'GET',
