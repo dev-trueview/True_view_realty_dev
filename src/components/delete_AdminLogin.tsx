@@ -22,7 +22,7 @@ const AdminLogin = () => {
 
     try {
       if (adminAuth.authenticate(username, password)) {
-        adminAuth.createSession();
+        adminAuth.createSession(username);
         toast({
           title: "Login Successful",
           description: "Welcome to the admin dashboard",
