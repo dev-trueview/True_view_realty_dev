@@ -1,4 +1,3 @@
-
 // Database configuration and connection utilities
 export interface DatabaseConfig {
   host: string;
@@ -175,11 +174,17 @@ export const databaseAPI = {
     }
   },
 
-  // Enhanced property addition with better error handling and demo mode support
+  // Fixed property addition with proper FormData handling and CORS support
   addProperty: async (propertyData: NewPropertyData, images: File[]): Promise<{ success: boolean; id?: number; message?: string }> => {
     // Check if we're in Lovable environment (demo mode)
     if (isLovableEnvironment()) {
-      return await mockSuccessfulPropertyAddition(propertyData, images);
+      console.log('Demo Mode: Property would be added:', propertyData);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return {
+        success: true,
+        id: Date.now(),
+        message: 'Property added successfully (Demo Mode)'
+      };
     }
 
     try {
@@ -197,16 +202,17 @@ export const databaseAPI = {
         }
       }
       
-      // Append property data with validation
-      Object.entries(propertyData).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) {
-          if (typeof value === 'object') {
-            formData.append(key, JSON.stringify(value));
-          } else {
-            formData.append(key, value.toString());
-          }
-        }
-      });
+      // Append property data with proper handling
+      formData.append('price', propertyData.price);
+      formData.append('location', propertyData.location);
+      formData.append('type', propertyData.type);
+      formData.append('bedrooms', propertyData.bedrooms.toString());
+      formData.append('bathrooms', propertyData.bathrooms.toString());
+      formData.append('sqft', propertyData.sqft.toString());
+      formData.append('year_built', propertyData.year_built.toString());
+      formData.append('description', propertyData.description || '');
+      formData.append('features', JSON.stringify(propertyData.features || []));
+      formData.append('neighborhood_info', JSON.stringify(propertyData.neighborhood_info || {}));
       
       // Validate and append image files
       if (images && images.length > 0) {
@@ -222,13 +228,18 @@ export const databaseAPI = {
           }
           formData.append('images', image);
         }
+      } else {
+        throw new Error('At least one image is required');
       }
 
       console.log('Sending request to backend...');
       
+      // Make request with proper CORS handling
       const response = await fetch(`${API_BASE_URL}/properties`, {
         method: 'POST',
-        body: formData
+        body: formData,
+        mode: 'cors',
+        credentials: 'include'
       });
       
       console.log('Response status:', response.status);
@@ -253,11 +264,11 @@ export const databaseAPI = {
     } catch (error) {
       console.error('Error adding property:', error);
       
-      // If it's a network error and we're not in demo mode, suggest backend connection
+      // Provide more specific error messages
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
         return { 
           success: false, 
-          message: 'Backend server not available. Please ensure the backend server is running on localhost:3001 or switch to demo mode.'
+          message: 'Network error: Cannot connect to backend server. Please ensure the backend server is running on localhost:3001'
         };
       }
       

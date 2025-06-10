@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, X, Upload, Info } from 'lucide-react';
+import { Plus, X, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { databaseAPI, NewPropertyData } from '@/utils/database';
 import FormFieldWithTooltip from './FormFieldWithTooltip';
@@ -111,6 +111,9 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
         features: filteredFeatures
       };
 
+      console.log('Submitting property data:', propertyData);
+      console.log('Images to upload:', images.length);
+
       const result = await databaseAPI.addProperty(propertyData, images);
 
       if (result.success) {
@@ -151,9 +154,10 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
         });
       }
     } catch (error) {
+      console.error('Form submission error:', error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: "An unexpected error occurred while adding the property",
         variant: "destructive"
       });
     } finally {
