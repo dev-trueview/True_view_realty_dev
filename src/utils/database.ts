@@ -68,13 +68,54 @@ export interface NewPropertyData {
 
 // API endpoints for backend communication
 const API_BASE_URL = 'http://localhost:3001/api';
+const BACKEND_URL = 'http://localhost:3001';
 
-// Add simple caching to prevent redundant requests
+// Enhanced caching with image URL processing
 const cache = new Map();
 const CACHE_DURATION = 30000; // 30 seconds
 
+// Helper function to process image URLs
+const processImageUrl = (imagePath: string): string => {
+  if (!imagePath) return '/placeholder.svg';
+  
+  // If it's already a full URL, return as is
+  if (imagePath.startsWith('http')) return imagePath;
+  
+  // If it starts with /images/, prepend backend URL
+  if (imagePath.startsWith('/images/')) {
+    return `${BACKEND_URL}${imagePath}`;
+  }
+  
+  // If it's just a filename, construct full path
+  if (!imagePath.startsWith('/')) {
+    return `${BACKEND_URL}/images/${imagePath}`;
+  }
+  
+  return imagePath;
+};
+
+// Helper function to process property images
+const processPropertyImages = (property: any): any => {
+  const processedProperty = { ...property };
+  
+  // Process main image
+  if (processedProperty.image) {
+    processedProperty.image = processImageUrl(processedProperty.image);
+  }
+  
+  // Process images array
+  if (processedProperty.images && Array.isArray(processedProperty.images)) {
+    processedProperty.images = processedProperty.images.map(processImageUrl);
+  } else if (processedProperty.image) {
+    // Fallback: if no images array but has main image, create array
+    processedProperty.images = [processedProperty.image];
+  }
+  
+  return processedProperty;
+};
+
 export const databaseAPI = {
-  // Submit enquiry to database
+  // Submit enquiry to database with enhanced error handling
   submitEnquiry: async (enquiryData: EnquiryData): Promise<boolean> => {
     try {
       const response = await fetch(`${API_BASE_URL}/enquiries`, {
@@ -89,7 +130,8 @@ export const databaseAPI = {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to submit enquiry');
+        const errorText = await response.text();
+        throw new Error(`Failed to submit enquiry: ${response.status} - ${errorText}`);
       }
       
       // Clear properties cache after enquiry submission
@@ -101,24 +143,45 @@ export const databaseAPI = {
     }
   },
 
-  // Add new property listing (Admin only)
+  // Enhanced property addition with better file handling
   addProperty: async (propertyData: NewPropertyData, images: File[]): Promise<{ success: boolean; id?: number; message?: string }> => {
     try {
       const formData = new FormData();
       
-      // Append property data
+      // Validate required fields
+      const requiredFields = ['price', 'location', 'type', 'bedrooms', 'bathrooms', 'sqft'];
+      for (const field of requiredFields) {
+        if (!propertyData[field as keyof NewPropertyData]) {
+          throw new Error(`Missing required field: ${field}`);
+        }
+      }
+      
+      // Append property data with validation
       Object.entries(propertyData).forEach(([key, value]) => {
-        if (typeof value === 'object') {
-          formData.append(key, JSON.stringify(value));
-        } else {
-          formData.append(key, value.toString());
+        if (value !== null && value !== undefined) {
+          if (typeof value === 'object') {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, value.toString());
+          }
         }
       });
       
-      // Append image files
-      images.forEach((image) => {
-        formData.append('images', image);
-      });
+      // Validate and append image files
+      if (images && images.length > 0) {
+        const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        const maxFileSize = 5 * 1024 * 1024; // 5MB
+        
+        for (const image of images) {
+          if (!validImageTypes.includes(image.type)) {
+            throw new Error(`Invalid image type: ${image.type}. Allowed types: ${validImageTypes.join(', ')}`);
+          }
+          if (image.size > maxFileSize) {
+            throw new Error(`Image ${image.name} is too large. Maximum size is 5MB.`);
+          }
+          formData.append('images', image);
+        }
+      }
       
       const response = await fetch(`${API_BASE_URL}/properties`, {
         method: 'POST',
@@ -126,20 +189,30 @@ export const databaseAPI = {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to add property');
+        const errorText = await response.text();
+        throw new Error(`Failed to add property: ${response.status} - ${errorText}`);
       }
       
       const result = await response.json();
+      
       // Clear cache after adding property
       cache.delete('properties');
-      return result;
+      
+      return {
+        success: true,
+        id: result.id,
+        message: 'Property added successfully'
+      };
     } catch (error) {
       console.error('Error adding property:', error);
-      return { success: false, message: 'Failed to add property' };
+      return { 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Failed to add property'
+      };
     }
   },
 
-  // Fetch active properties from database with caching
+  // Enhanced property fetching with improved image handling
   fetchActiveProperties: async (): Promise<Property[]> => {
     const cacheKey = 'properties';
     const cached = cache.get(cacheKey);
@@ -149,58 +222,89 @@ export const databaseAPI = {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/properties`);
+      const response = await fetch(`${API_BASE_URL}/properties`, {
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch properties');
+        throw new Error(`Failed to fetch properties: ${response.status}`);
       }
       
       const properties = await response.json();
       
-      // Cache the results
+      // Process all properties to fix image URLs
+      const processedProperties = properties.map(processPropertyImages);
+      
+      // Cache the processed results
       cache.set(cacheKey, {
-        data: properties,
+        data: processedProperties,
         timestamp: Date.now()
       });
       
-      return properties;
+      return processedProperties;
     } catch (error) {
       console.error('Error fetching properties:', error);
       return [];
     }
   },
 
-  // Fetch detailed property information by ID
+  // Enhanced property details fetching
   fetchPropertyDetails: async (propertyId: number): Promise<Property | null> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/properties/${propertyId}`);
+      const response = await fetch(`${API_BASE_URL}/properties/${propertyId}`, {
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch property details');
+        throw new Error(`Failed to fetch property details: ${response.status}`);
       }
       
       const property = await response.json();
-      return property;
+      return processPropertyImages(property);
     } catch (error) {
       console.error('Error fetching property details:', error);
       return null;
     }
   },
 
-  // Fetch property images from folder
+  // Enhanced image fetching
   fetchPropertyImages: async (propertyId: number): Promise<string[]> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/properties/${propertyId}/images`);
+      const response = await fetch(`${API_BASE_URL}/properties/${propertyId}/images`, {
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch property images');
+        throw new Error(`Failed to fetch property images: ${response.status}`);
       }
 
       const images = await response.json();
-      return images;
+      return images.map(processImageUrl);
     } catch (error) {
       console.error('Error fetching property images:', error);
       return [];
+    }
+  },
+
+  // Test connection to backend
+  testConnection: async (): Promise<boolean> => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/health`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Backend connection test failed:', error);
+      return false;
     }
   }
 };

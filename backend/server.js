@@ -14,7 +14,23 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
-app.use('/images', express.static(path.join(__dirname, 'property-images')));
+
+// Serve static images with proper headers
+app.use('/images', express.static(path.join(__dirname, 'property-images'), {
+  setHeaders: (res, path) => {
+    res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+}));
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    version: '1.0.0' 
+  });
+});
 
 // Ensure property-images directory exists
 const ensureDirectoryExists = async () => {
@@ -27,15 +43,17 @@ const ensureDirectoryExists = async () => {
   }
 };
 
-// Configure multer for file uploads
+// Enhanced multer configuration with better error handling
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, path.join(__dirname, 'property-images'));
   },
   filename: function (req, file, cb) {
-    const propertyId = req.body.propertyId || Date.now();
+    const timestamp = Date.now();
+    const propertyId = req.body.propertyId || timestamp;
     const ext = path.extname(file.originalname);
-    cb(null, `${propertyId}_${file.fieldname}_${Date.now()}${ext}`);
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9]/g, '_');
+    cb(null, `${propertyId}_${timestamp}_${safeName}`);
   }
 });
 
@@ -46,15 +64,16 @@ const upload = multer({
     files: 10
   },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed'), false);
+      cb(new Error(`Invalid file type: ${file.mimetype}. Allowed types: ${allowedTypes.join(', ')}`), false);
     }
   }
 });
 
-// Database configuration
+// Database configuration with connection pooling
 const dbConfig = {
   host: 'localhost',
   user: 'root',
@@ -63,25 +82,26 @@ const dbConfig = {
   port: 3306
 };
 
-// Initialize database connection pool
 const pool = mysql.createPool({
   ...dbConfig,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
   acquireTimeout: 60000,
-  timeout: 60000
+  timeout: 60000,
+  reconnect: true
 });
 
-// Database initialization with enhanced schema
+// Enhanced database initialization
 async function initializeDatabase() {
+  let connection;
   try {
-    const connection = await pool.getConnection();
+    connection = await pool.getConnection();
     
     // Create database if it doesn't exist
     await connection.execute(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`);
     
-    // Create enquiries table with enhanced schema
+    // Create enquiries table
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS enquiries (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -93,22 +113,24 @@ async function initializeDatabase() {
         ip_address VARCHAR(45),
         user_agent TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_created_at (created_at),
+        INDEX idx_email (email)
       )
     `);
     
-    // Create properties table with enhanced schema for new fields
+    // Create properties table with enhanced schema
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS properties (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        image VARCHAR(255),
+        image VARCHAR(500),
         images JSON,
-        price VARCHAR(100),
-        location VARCHAR(255),
-        type VARCHAR(100),
-        bedrooms INT,
-        bathrooms DECIMAL(3,1),
-        sqft INT,
+        price VARCHAR(100) NOT NULL,
+        location VARCHAR(255) NOT NULL,
+        type VARCHAR(100) NOT NULL,
+        bedrooms INT NOT NULL,
+        bathrooms DECIMAL(3,1) NOT NULL,
+        sqft INT NOT NULL,
         year_built INT,
         amenities TEXT,
         description TEXT,
@@ -119,11 +141,15 @@ async function initializeDatabase() {
         views_count INT DEFAULT 0,
         enquiries_count INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_status (status),
+        INDEX idx_type (type),
+        INDEX idx_location (location),
+        INDEX idx_created_at (created_at)
       )
     `);
 
-    // Create analytics table for tracking website usage
+    // Create analytics table
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS analytics (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -131,25 +157,30 @@ async function initializeDatabase() {
         event_data JSON,
         ip_address VARCHAR(45),
         user_agent TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_event_type (event_type),
+        INDEX idx_created_at (created_at)
       )
     `);
     
-    connection.release();
     console.log('Database initialized successfully');
   } catch (error) {
     console.error('Database initialization failed:', error);
     throw error;
+  } finally {
+    if (connection) connection.release();
   }
 }
 
-// Error handling middleware
+// Enhanced error handling middleware
 const handleError = (res, error, message = 'Internal server error') => {
-  console.error(error);
-  res.status(500).json({ 
+  console.error('Error:', error);
+  const statusCode = error.statusCode || 500;
+  res.status(statusCode).json({ 
     success: false, 
     message: message,
-    error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    timestamp: new Date().toISOString()
   });
 };
 
@@ -160,6 +191,24 @@ app.post('/api/enquiries', async (req, res) => {
   let connection;
   try {
     const { name, email, phone, message, property } = req.body;
+    
+    // Validation
+    if (!name || !email || !phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, email, and phone are required fields'
+      });
+    }
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email format'
+      });
+    }
+    
     const ip_address = req.ip || req.connection.remoteAddress;
     const user_agent = req.get('User-Agent');
     
@@ -168,7 +217,7 @@ app.post('/api/enquiries', async (req, res) => {
     // Insert enquiry
     const [result] = await connection.execute(
       'INSERT INTO enquiries (name, email, phone, message, property, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [name, email, phone, message, property, ip_address, user_agent]
+      [name.trim(), email.trim(), phone.trim(), message?.trim(), property?.trim(), ip_address, user_agent]
     );
 
     // Track analytics event
@@ -189,13 +238,33 @@ app.post('/api/enquiries', async (req, res) => {
   }
 });
 
-// Get all enquiries
+// Get all enquiries with pagination
 app.get('/api/enquiries', async (req, res) => {
   let connection;
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = (page - 1) * limit;
+    
     connection = await pool.getConnection();
-    const [rows] = await connection.execute('SELECT * FROM enquiries ORDER BY created_at DESC');
-    res.json(rows);
+    const [rows] = await connection.execute(
+      'SELECT * FROM enquiries ORDER BY created_at DESC LIMIT ? OFFSET ?',
+      [limit, offset]
+    );
+    
+    // Get total count
+    const [countResult] = await connection.execute('SELECT COUNT(*) as total FROM enquiries');
+    const total = countResult[0].total;
+    
+    res.json({
+      data: rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     handleError(res, error, 'Failed to fetch enquiries');
   } finally {
@@ -212,11 +281,65 @@ app.post('/api/properties', upload.array('images', 10), async (req, res) => {
       description, features, neighborhood_info
     } = req.body;
 
+    // Comprehensive validation
+    const requiredFields = { price, location, type, bedrooms, bathrooms, sqft };
+    const missingFields = Object.entries(requiredFields)
+      .filter(([key, value]) => !value)
+      .map(([key]) => key);
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Missing required fields: ${missingFields.join(', ')}`
+      });
+    }
+
+    // Validate numeric fields
+    const numericFields = {
+      bedrooms: parseInt(bedrooms),
+      bathrooms: parseFloat(bathrooms),
+      sqft: parseInt(sqft),
+      year_built: year_built ? parseInt(year_built) : null
+    };
+
+    if (numericFields.bedrooms < 0 || numericFields.bedrooms > 50) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bedrooms must be between 0 and 50'
+      });
+    }
+
+    if (numericFields.bathrooms < 0 || numericFields.bathrooms > 50) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bathrooms must be between 0 and 50'
+      });
+    }
+
+    if (numericFields.sqft < 1 || numericFields.sqft > 100000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Square footage must be between 1 and 100,000'
+      });
+    }
+
     connection = await pool.getConnection();
     
-    // Parse JSON fields
-    const parsedFeatures = typeof features === 'string' ? JSON.parse(features) : features;
-    const parsedNeighborhood = typeof neighborhood_info === 'string' ? JSON.parse(neighborhood_info) : neighborhood_info;
+    // Parse JSON fields safely
+    let parsedFeatures = [];
+    let parsedNeighborhood = {};
+    
+    try {
+      parsedFeatures = features ? JSON.parse(features) : [];
+    } catch (e) {
+      parsedFeatures = [];
+    }
+    
+    try {
+      parsedNeighborhood = neighborhood_info ? JSON.parse(neighborhood_info) : {};
+    } catch (e) {
+      parsedNeighborhood = {};
+    }
     
     // Handle uploaded images
     const imageUrls = req.files ? req.files.map(file => `/images/${file.filename}`) : [];
@@ -231,14 +354,14 @@ app.post('/api/properties', upload.array('images', 10), async (req, res) => {
     `, [
       primaryImage,
       JSON.stringify(imageUrls),
-      price,
-      location,
-      type,
-      parseInt(bedrooms),
-      parseFloat(bathrooms),
-      parseInt(sqft),
-      parseInt(year_built),
-      description,
+      price.trim(),
+      location.trim(),
+      type.trim(),
+      numericFields.bedrooms,
+      numericFields.bathrooms,
+      numericFields.sqft,
+      numericFields.year_built,
+      description?.trim() || '',
       JSON.stringify(parsedFeatures),
       JSON.stringify(parsedNeighborhood)
     ]);
@@ -250,13 +373,19 @@ app.post('/api/properties', upload.array('images', 10), async (req, res) => {
       images: imageUrls
     });
   } catch (error) {
+    // Clean up uploaded files if database insertion fails
+    if (req.files) {
+      req.files.forEach(file => {
+        fs.unlink(file.path).catch(console.error);
+      });
+    }
     handleError(res, error, 'Failed to add property');
   } finally {
     if (connection) connection.release();
   }
 });
 
-// Get all active properties with improved image handling
+// Get all active properties with enhanced image processing
 app.get('/api/properties', async (req, res) => {
   let connection;
   try {
@@ -492,7 +621,7 @@ app.post('/api/analytics/pageview', async (req, res) => {
   }
 });
 
-// Initialize database and start server
+// Initialize and start server
 const startServer = async () => {
   try {
     await ensureDirectoryExists();
@@ -501,7 +630,8 @@ const startServer = async () => {
     app.listen(PORT, () => {
       console.log(`TrueView Reality backend server running on port ${PORT}`);
       console.log('Database connection established');
-      console.log('Admin dashboard available at /admin-dashboard');
+      console.log('Health check available at /api/health');
+      console.log(`Static images served from /images/`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
@@ -510,3 +640,5 @@ const startServer = async () => {
 };
 
 startServer();
+
+</edits_to_apply>

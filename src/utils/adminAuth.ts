@@ -9,6 +9,7 @@ interface AdminSession {
   isAuthenticated: boolean;
   loginTime?: Date;
   expiresAt?: Date;
+  username?: string;
 }
 
 const ADMIN_CREDENTIALS: AdminCredentials = {
@@ -25,7 +26,6 @@ export const adminAuth = {
     const normalizedUsername = username.trim();
     const normalizedPassword = password.trim();
     
-    // Add slight delay to prevent timing attacks
     const isValid = normalizedUsername === ADMIN_CREDENTIALS.username && 
                    normalizedPassword === ADMIN_CREDENTIALS.password;
     
@@ -38,16 +38,17 @@ export const adminAuth = {
     return isValid;
   },
 
-  // Create admin session with better error handling
-  createSession: (): boolean => {
+  // Create admin session with enhanced data
+  createSession: (username: string): boolean => {
     try {
       const session: AdminSession = {
         isAuthenticated: true,
         loginTime: new Date(),
-        expiresAt: new Date(Date.now() + SESSION_DURATION)
+        expiresAt: new Date(Date.now() + SESSION_DURATION),
+        username: username.trim()
       };
       localStorage.setItem('adminSession', JSON.stringify(session));
-      console.log('Admin session created successfully');
+      console.log('Admin session created successfully for:', username);
       return true;
     } catch (error) {
       console.error('Failed to create admin session:', error);
@@ -55,18 +56,16 @@ export const adminAuth = {
     }
   },
 
-  // Enhanced authentication check with better error handling
+  // Enhanced authentication check
   isAuthenticated: (): boolean => {
     try {
       const sessionData = localStorage.getItem('adminSession');
       if (!sessionData) {
-        console.log('No admin session found');
         return false;
       }
 
       const session: AdminSession = JSON.parse(sessionData);
       if (!session.isAuthenticated || !session.expiresAt) {
-        console.log('Invalid session data');
         adminAuth.logout();
         return false;
       }
@@ -74,19 +73,36 @@ export const adminAuth = {
       const now = new Date();
       const expiresAt = new Date(session.expiresAt);
       
-      // Check if session has expired
       if (now > expiresAt) {
         console.log('Admin session expired');
         adminAuth.logout();
         return false;
       }
 
-      console.log('Admin session valid');
       return true;
     } catch (error) {
       console.error('Error checking admin authentication:', error);
-      adminAuth.logout(); // Clear corrupted session
+      adminAuth.logout();
       return false;
+    }
+  },
+
+  // Get current admin info
+  getCurrentAdmin: (): { username: string; loginTime: Date } | null => {
+    try {
+      const sessionData = localStorage.getItem('adminSession');
+      if (!sessionData) return null;
+
+      const session: AdminSession = JSON.parse(sessionData);
+      if (!session.isAuthenticated || !session.username) return null;
+
+      return {
+        username: session.username,
+        loginTime: session.loginTime ? new Date(session.loginTime) : new Date()
+      };
+    } catch (error) {
+      console.error('Error getting current admin:', error);
+      return null;
     }
   },
 

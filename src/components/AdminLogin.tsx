@@ -8,7 +8,11 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Eye, EyeOff } from 'lucide-react';
 
-const AdminLogin = () => {
+interface AdminLoginProps {
+  showTrigger?: boolean;
+}
+
+const AdminLogin = ({ showTrigger = true }: AdminLoginProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -17,18 +21,22 @@ const AdminLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Don't show login if already authenticated
+  if (!showTrigger && adminAuth.isAuthenticated()) {
+    return null;
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // Add small delay to prevent rapid-fire attempts
       await new Promise(resolve => setTimeout(resolve, 500));
       
       console.log('Attempting login with:', { username: username.trim() });
       
       if (adminAuth.authenticate(username, password)) {
-        const sessionCreated = adminAuth.createSession();
+        const sessionCreated = adminAuth.createSession(username);
         
         if (sessionCreated) {
           toast({
@@ -72,21 +80,25 @@ const AdminLogin = () => {
     setShowPassword(false);
   };
 
+  if (!showTrigger) {
+    return null;
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button 
           variant="ghost" 
           size="sm" 
-          className="text-gray-400 hover:text-cyan-400 p-1"
+          className="text-gray-400 hover:text-cyan-400 p-1 transition-all duration-300 hover:scale-110"
           title="Admin Access"
         >
           <Settings className="w-4 h-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md bg-slate-900 border-gray-700" onInteractOutside={handleClose}>
+      <DialogContent className="sm:max-w-md bg-gradient-to-br from-slate-900 to-slate-800 border-gray-700 shadow-2xl" onInteractOutside={handleClose}>
         <DialogHeader>
-          <DialogTitle className="text-cyan-400">Admin Access</DialogTitle>
+          <DialogTitle className="text-cyan-400 text-center text-xl font-bold">Admin Access</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
@@ -95,7 +107,7 @@ const AdminLogin = () => {
               placeholder="Username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="bg-slate-800/50 border-gray-600 text-white"
+              className="bg-slate-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 transition-colors"
               required
               autoComplete="username"
             />
@@ -106,7 +118,7 @@ const AdminLogin = () => {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="bg-slate-800/50 border-gray-600 text-white pr-10"
+              className="bg-slate-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 transition-colors pr-10"
               required
               autoComplete="current-password"
             />
@@ -114,7 +126,7 @@ const AdminLogin = () => {
               type="button"
               variant="ghost"
               size="sm"
-              className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-white"
+              className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-white transition-colors"
               onClick={() => setShowPassword(!showPassword)}
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -122,10 +134,17 @@ const AdminLogin = () => {
           </div>
           <Button
             type="submit"
-            className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700"
+            className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white font-semibold py-2 px-4 rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl"
             disabled={isLoading}
           >
-            {isLoading ? 'Logging in...' : 'Login'}
+            {isLoading ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Logging in...
+              </div>
+            ) : (
+              'Login'
+            )}
           </Button>
         </form>
       </DialogContent>
