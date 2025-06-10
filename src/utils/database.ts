@@ -143,9 +143,13 @@ export const databaseAPI = {
     }
   },
 
-  // Enhanced property addition with better file handling
+  // Enhanced property addition with better file handling and debugging
   addProperty: async (propertyData: NewPropertyData, images: File[]): Promise<{ success: boolean; id?: number; message?: string }> => {
     try {
+      console.log('Starting property addition process');
+      console.log('Property data:', propertyData);
+      console.log('Images count:', images.length);
+
       const formData = new FormData();
       
       // Validate required fields
@@ -182,18 +186,24 @@ export const databaseAPI = {
           formData.append('images', image);
         }
       }
+
+      console.log('Sending request to backend...');
       
       const response = await fetch(`${API_BASE_URL}/properties`, {
         method: 'POST',
         body: formData
       });
       
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('Backend error response:', errorText);
         throw new Error(`Failed to add property: ${response.status} - ${errorText}`);
       }
       
       const result = await response.json();
+      console.log('Backend success response:', result);
       
       // Clear cache after adding property
       cache.delete('properties');
@@ -222,6 +232,8 @@ export const databaseAPI = {
     }
 
     try {
+      console.log('Fetching properties from backend...');
+      
       const response = await fetch(`${API_BASE_URL}/properties`, {
         headers: {
           'Accept': 'application/json',
@@ -233,6 +245,7 @@ export const databaseAPI = {
       }
       
       const properties = await response.json();
+      console.log('Fetched properties:', properties.length);
       
       // Process all properties to fix image URLs
       const processedProperties = properties.map(processPropertyImages);

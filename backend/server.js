@@ -1,3 +1,4 @@
+
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
@@ -276,6 +277,10 @@ app.get('/api/enquiries', async (req, res) => {
 app.post('/api/properties', upload.array('images', 10), async (req, res) => {
   let connection;
   try {
+    console.log('Property insertion request received');
+    console.log('Body:', req.body);
+    console.log('Files:', req.files ? req.files.length : 0);
+
     const {
       price, location, type, bedrooms, bathrooms, sqft, year_built,
       description, features, neighborhood_info
@@ -288,6 +293,7 @@ app.post('/api/properties', upload.array('images', 10), async (req, res) => {
       .map(([key]) => key);
     
     if (missingFields.length > 0) {
+      console.log('Missing fields:', missingFields);
       return res.status(400).json({
         success: false,
         message: `Missing required fields: ${missingFields.join(', ')}`
@@ -332,18 +338,22 @@ app.post('/api/properties', upload.array('images', 10), async (req, res) => {
     try {
       parsedFeatures = features ? JSON.parse(features) : [];
     } catch (e) {
+      console.log('Features parsing error:', e);
       parsedFeatures = [];
     }
     
     try {
       parsedNeighborhood = neighborhood_info ? JSON.parse(neighborhood_info) : {};
     } catch (e) {
+      console.log('Neighborhood info parsing error:', e);
       parsedNeighborhood = {};
     }
     
     // Handle uploaded images
     const imageUrls = req.files ? req.files.map(file => `/images/${file.filename}`) : [];
     const primaryImage = imageUrls[0] || null;
+    
+    console.log('Image URLs:', imageUrls);
     
     // Insert new property
     const [result] = await connection.execute(`
@@ -366,6 +376,8 @@ app.post('/api/properties', upload.array('images', 10), async (req, res) => {
       JSON.stringify(parsedNeighborhood)
     ]);
     
+    console.log('Property inserted successfully with ID:', result.insertId);
+    
     res.status(201).json({
       success: true,
       message: 'Property added successfully',
@@ -373,6 +385,7 @@ app.post('/api/properties', upload.array('images', 10), async (req, res) => {
       images: imageUrls
     });
   } catch (error) {
+    console.error('Property insertion error:', error);
     // Clean up uploaded files if database insertion fails
     if (req.files) {
       req.files.forEach(file => {
@@ -640,5 +653,3 @@ const startServer = async () => {
 };
 
 startServer();
-
-</edits_to_apply>

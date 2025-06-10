@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import AddPropertyForm from '@/components/AddPropertyForm';
+import AdminLogin from '@/components/AdminLogin';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { LogOut, Home, Building, Users, Database, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -29,17 +30,26 @@ const AdminDashboard = () => {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     // Check authentication
-    if (!adminAuth.isAuthenticated()) {
+    const authStatus = adminAuth.isAuthenticated();
+    setIsAuthenticated(authStatus);
+    
+    if (!authStatus) {
+      toast({
+        title: "Access Denied",
+        description: "Please log in to access the admin dashboard",
+        variant: "destructive",
+      });
       navigate('/');
       return;
     }
 
     // Fetch analytics data
     fetchAnalyticsData();
-  }, [navigate]);
+  }, [navigate, toast]);
 
   const fetchAnalyticsData = async () => {
     try {
@@ -93,6 +103,7 @@ const AdminDashboard = () => {
 
   const handleLogout = () => {
     adminAuth.logout();
+    setIsAuthenticated(false);
     toast({
       title: "Logged Out",
       description: "You have been successfully logged out",
@@ -106,6 +117,18 @@ const AdminDashboard = () => {
   };
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+
+  // Show login form if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-white mb-4">Admin Access Required</h1>
+          <AdminLogin showTrigger={true} />
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

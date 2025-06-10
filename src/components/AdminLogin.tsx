@@ -22,7 +22,7 @@ const AdminLogin = ({ showTrigger = true }: AdminLoginProps) => {
   const { toast } = useToast();
 
   // Don't show login if already authenticated
-  if (!showTrigger && adminAuth.isAuthenticated()) {
+  if (!showTrigger || adminAuth.isAuthenticated()) {
     return null;
   }
 
@@ -79,10 +79,6 @@ const AdminLogin = ({ showTrigger = true }: AdminLoginProps) => {
     setPassword('');
     setShowPassword(false);
   };
-
-  if (!showTrigger) {
-    return null;
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
