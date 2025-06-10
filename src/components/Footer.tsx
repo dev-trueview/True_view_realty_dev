@@ -2,9 +2,13 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Home, Phone, Mail, MapPin, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import AdminLogin from "./AdminLogin";
 
 const Footer = () => {
+  const location = useLocation();
+  const isAdminPage = location.pathname === '/admin-dashboard';
+
   return (
     <footer className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white border-t border-cyan-500/20">
       <div className="container mx-auto px-4 py-12">
@@ -83,7 +87,7 @@ const Footer = () => {
           <p className="text-gray-400">
             © 2024 TrueView Reality. All rights reserved. | Privacy Policy | Terms of Service
           </p>
-          <AdminLogin />
+          {!isAdminPage && <AdminLogin showTrigger={true} />}
         </div>
       </div>
     </footer>
