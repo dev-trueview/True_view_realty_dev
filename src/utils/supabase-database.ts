@@ -82,7 +82,7 @@ export const supabaseAPI = {
         throw error;
       }
 
-      return data || [];
+      return (data || []) as Property[];
     } catch (error) {
       console.error('Error in fetchActiveProperties:', error);
       return [];
@@ -102,7 +102,7 @@ export const supabaseAPI = {
         throw error;
       }
 
-      return data || [];
+      return (data || []) as Property[];
     } catch (error) {
       console.error('Error in fetchAllProperties:', error);
       return [];
@@ -123,7 +123,7 @@ export const supabaseAPI = {
         return null;
       }
 
-      return data;
+      return data as Property;
     } catch (error) {
       console.error('Error in fetchPropertyById:', error);
       return null;
@@ -202,8 +202,8 @@ export const supabaseAPI = {
 
       // Update enquiry count for the property if property_id is provided
       if (enquiryData.property_id) {
-        await supabase.rpc('increment_enquiry_count', { 
-          property_id: enquiryData.property_id 
+        await (supabase as any).rpc('increment_enquiry_count', { 
+          property_id: enquiryData.property_id
         });
       }
 
