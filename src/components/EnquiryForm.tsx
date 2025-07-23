@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { databaseAPI } from "@/utils/database";
+import { useToast } from "@/hooks/use-toast";
 
 interface EnquiryFormProps {
   property?: any;
@@ -21,6 +22,7 @@ const EnquiryForm = ({ property, onSubmit, onClose }: EnquiryFormProps) => {
   });
   const [errors, setErrors] = useState<any>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   const validateForm = () => {
     const newErrors: any = {};
@@ -54,14 +56,24 @@ const EnquiryForm = ({ property, onSubmit, onClose }: EnquiryFormProps) => {
     
     try {
       const enquiryData = {
-        ...formData,
-        property: property?.location || "General Enquiry"
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        message: formData.message,
+        property: property?.location || "General Enquiry",
+        property_id: property?.id || null
       };
       
-      // Submit to database
+      console.log('Submitting enquiry:', enquiryData);
+      
+      // Submit to Supabase
       const success = await databaseAPI.submitEnquiry(enquiryData);
       
       if (success) {
+        toast({
+          title: "Success!",
+          description: "Your enquiry has been submitted successfully. We'll contact you soon.",
+        });
         onSubmit(enquiryData);
         setFormData({ name: "", email: "", phone: "", message: "" });
       } else {
@@ -69,6 +81,11 @@ const EnquiryForm = ({ property, onSubmit, onClose }: EnquiryFormProps) => {
       }
     } catch (error) {
       console.error('Error submitting enquiry:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit enquiry. Please try again.",
+        variant: "destructive",
+      });
       setErrors({ submit: 'Failed to submit enquiry. Please try again.' });
     } finally {
       setIsSubmitting(false);

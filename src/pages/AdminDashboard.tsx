@@ -53,11 +53,17 @@ const AdminDashboard = () => {
 
   const fetchAnalyticsData = async () => {
     try {
-      // Fetch data from multiple API endpoints
+      setLoading(true);
+      console.log('Fetching analytics data...');
+      
+      // Fetch data from Supabase
       const [properties, enquiries] = await Promise.all([
-        databaseAPI.fetchActiveProperties(),
-        fetch('http://localhost:3001/api/enquiries').then(res => res.json()).catch(() => [])
+        databaseAPI.fetchAllProperties(),
+        databaseAPI.fetchEnquiries()
       ]);
+
+      console.log('Properties fetched:', properties.length);
+      console.log('Enquiries fetched:', enquiries.length);
 
       // Process property data by type
       const propertyByType = properties.reduce((acc: any, property: any) => {
@@ -81,14 +87,17 @@ const AdminDashboard = () => {
         return acc;
       }, {});
 
-      setAnalyticsData({
+      const analyticsData: AnalyticsData = {
         totalProperties: properties.length,
         totalEnquiries: enquiries.length,
         recentEnquiries: enquiries.slice(0, 10),
         propertyByType: Object.entries(propertyByType).map(([name, value]) => ({ name, value: value as number })),
         propertyByLocation: Object.entries(propertyByLocation).map(([name, value]) => ({ name, value: value as number })),
         enquiriesByMonth: Object.entries(enquiriesByMonth).map(([month, count]) => ({ month, count: count as number }))
-      });
+      };
+
+      setAnalyticsData(analyticsData);
+      console.log('Analytics data processed successfully');
     } catch (error) {
       console.error('Error fetching analytics data:', error);
       toast({
@@ -114,6 +123,10 @@ const AdminDashboard = () => {
   const handlePropertyAdded = () => {
     fetchAnalyticsData(); // Refresh data after adding property
     setActiveTab('overview'); // Switch back to overview
+    toast({
+      title: "Success",
+      description: "Property added successfully",
+    });
   };
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
@@ -136,7 +149,8 @@ const AdminDashboard = () => {
         <Header />
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center h-64">
-            <div className="text-white text-xl">Loading analytics...</div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <div className="text-white text-xl ml-4">Loading analytics...</div>
           </div>
         </div>
         <Footer />
@@ -213,7 +227,7 @@ const AdminDashboard = () => {
                   <Database className="h-4 w-4 text-cyan-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-400">Online</div>
+                  <div className="text-2xl font-bold text-green-400">Supabase</div>
                 </CardContent>
               </Card>
             </div>
@@ -290,7 +304,9 @@ const AdminDashboard = () => {
                         <TableCell className="text-white">{enquiry.name}</TableCell>
                         <TableCell className="text-gray-300">{enquiry.email}</TableCell>
                         <TableCell className="text-gray-300">{enquiry.phone}</TableCell>
-                        <TableCell className="text-gray-300">{enquiry.property || 'General'}</TableCell>
+                        <TableCell className="text-gray-300">
+                          {enquiry.property_details?.property || 'General'}
+                        </TableCell>
                         <TableCell className="text-gray-300">
                           {new Date(enquiry.created_at).toLocaleDateString()}
                         </TableCell>

@@ -1,37 +1,33 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { databaseAPI, Property } from '@/utils/database';
-import { fallbackProperties } from '@/data/fallbackProperties';
 
 export const useProperties = () => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [usingFallback, setUsingFallback] = useState(false);
 
   const fetchProperties = useCallback(async (silent = false) => {
     try {
       if (!silent) {
         setLoading(true);
+        setError(null);
       }
       
+      console.log('Fetching properties from Supabase...');
       const data = await databaseAPI.fetchActiveProperties();
       
       if (data && data.length > 0) {
         setProperties(data);
-        setUsingFallback(false);
-        setError(null);
+        console.log(`Successfully loaded ${data.length} properties from Supabase`);
       } else {
-        // Use fallback data if backend returns empty or fails
-        setProperties(fallbackProperties);
-        setUsingFallback(true);
-        setError(null);
+        setProperties([]);
+        console.log('No properties found in Supabase');
       }
     } catch (err) {
-      console.log('Backend unavailable, using fallback data');
-      setProperties(fallbackProperties);
-      setUsingFallback(true);
-      setError(null);
+      console.error('Error fetching properties:', err);
+      setError('Failed to load properties. Please try again.');
+      setProperties([]);
     } finally {
       if (!silent) {
         setLoading(false);
@@ -41,7 +37,6 @@ export const useProperties = () => {
 
   useEffect(() => {
     fetchProperties();
-    // Remove the aggressive polling that was causing flickering
   }, [fetchProperties]);
 
   // Expose manual refresh for user-initiated updates only
@@ -53,7 +48,6 @@ export const useProperties = () => {
     properties, 
     loading, 
     error, 
-    refetch: manualRefresh,
-    usingFallback
+    refetch: manualRefresh
   };
 };

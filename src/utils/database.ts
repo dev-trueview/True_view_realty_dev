@@ -1,172 +1,216 @@
-// Database configuration and connection utilities
-export interface DatabaseConfig {
-  host: string;
-  user: string;
-  password: string;
-  database: string;
-  port: number;
+
+import { supabase } from '@/integrations/supabase/client';
+
+export interface Property {
+  id: string;
+  image: string | null;
+  images: string[];
+  price: string;
+  location: string;
+  type: string;
+  bedrooms: number;
+  bathrooms: number;
+  sqft: number;
+  year_built?: number;
+  description?: string;
+  features: string[];
+  amenities: string[];
+  neighborhood_info: any;
+  status: 'active' | 'sold' | 'pending';
+  views_count: number;
+  enquiries_count: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface EnquiryData {
   name: string;
   email: string;
   phone: string;
-  message: string;
-  property: string;
-  created_at?: string;
+  message?: string;
+  property?: string;
+  property_id?: string;
 }
-
-export interface Property {
-  id: number;
-  image: string;
-  price: string;
-  location: string;
-  type: string;
-  bedrooms: number;
-  bathrooms: number;
-  sqft: number;
-  status: 'active' | 'sold' | 'pending';
-  created_at?: string;
-  // Extended properties for detailed view
-  description?: string;
-  features?: string[];
-  amenities?: string[];
-  year_built?: number;
-  neighborhood_info?: {
-    walkScore?: number;
-    transitScore?: number;
-    bikeScore?: number;
-    schools?: string;
-    shopping?: string;
-    dining?: string;
-  };
-  images?: string[];
-  views_count?: number;
-  enquiries_count?: number;
-}
-
-export interface NewPropertyData {
-  price: string;
-  location: string;
-  type: string;
-  bedrooms: number;
-  bathrooms: number;
-  sqft: number;
-  year_built: number;
-  description: string;
-  features: string[];
-  neighborhood_info: {
-    walkScore?: number;
-    transitScore?: number;
-    bikeScore?: number;
-    schools?: string;
-    shopping?: string;
-    dining?: string;
-  };
-}
-
-// API endpoints for backend communication
-const API_BASE_URL = 'http://localhost:3001/api';
-const BACKEND_URL = 'http://localhost:3001';
-
-// Enhanced caching with image URL processing
-const cache = new Map();
-const CACHE_DURATION = 30000; // 30 seconds
-
-// Check if we're in Lovable environment (no backend available)
-const isLovableEnvironment = () => {
-  return window.location.hostname.includes('lovableproject.com') || 
-         window.location.hostname.includes('lovable.dev');
-};
-
-// Helper function to process image URLs
-const processImageUrl = (imagePath: string): string => {
-  if (!imagePath) return '/placeholder.svg';
-  
-  // If it's already a full URL, return as is
-  if (imagePath.startsWith('http')) return imagePath;
-  
-  // If it starts with /images/, prepend backend URL
-  if (imagePath.startsWith('/images/')) {
-    return `${BACKEND_URL}${imagePath}`;
-  }
-  
-  // If it's just a filename, construct full path
-  if (!imagePath.startsWith('/')) {
-    return `${BACKEND_URL}/images/${imagePath}`;
-  }
-  
-  return imagePath;
-};
-
-// Helper function to process property images
-const processPropertyImages = (property: any): any => {
-  const processedProperty = { ...property };
-  
-  // Process main image
-  if (processedProperty.image) {
-    processedProperty.image = processImageUrl(processedProperty.image);
-  }
-  
-  // Process images array
-  if (processedProperty.images && Array.isArray(processedProperty.images)) {
-    processedProperty.images = processedProperty.images.map(processImageUrl);
-  } else if (processedProperty.image) {
-    // Fallback: if no images array but has main image, create array
-    processedProperty.images = [processedProperty.image];
-  }
-  
-  return processedProperty;
-};
-
-// Mock successful property addition for demo purposes
-const mockSuccessfulPropertyAddition = async (propertyData: NewPropertyData, images: File[]): Promise<{ success: boolean; id?: number; message?: string }> => {
-  console.log('Mock: Adding property to demo environment');
-  console.log('Property data:', propertyData);
-  console.log('Images:', images.length);
-  
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Generate a mock ID
-  const mockId = Date.now();
-  
-  console.log('Mock: Property added successfully with ID:', mockId);
-  
-  return {
-    success: true,
-    id: mockId,
-    message: 'Property added successfully (Demo Mode - No backend connected)'
-  };
-};
 
 export const databaseAPI = {
-  // Submit enquiry to database with enhanced error handling
-  submitEnquiry: async (enquiryData: EnquiryData): Promise<boolean> => {
-    if (isLovableEnvironment()) {
-      console.log('Demo Mode: Enquiry would be submitted:', enquiryData);
-      return true;
-    }
-
+  // Fetch all active properties
+  async fetchActiveProperties(): Promise<Property[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/enquiries`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...enquiryData,
-          created_at: new Date().toISOString()
-        })
-      });
+      console.log('Fetching active properties from Supabase...');
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to submit enquiry: ${response.status} - ${errorText}`);
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
       }
+
+      // Transform data to match Property interface
+      const properties: Property[] = (data || []).map(item => ({
+        id: item.id,
+        image: item.image,
+        images: Array.isArray(item.images) ? item.images : (item.images ? [item.images] : []),
+        price: item.price,
+        location: item.location,
+        type: item.type,
+        bedrooms: item.bedrooms,
+        bathrooms: item.bathrooms,
+        sqft: item.sqft,
+        year_built: item.year_built,
+        description: item.description,
+        features: Array.isArray(item.features) ? item.features : [],
+        amenities: Array.isArray(item.amenities) ? item.amenities : [],
+        neighborhood_info: item.neighborhood_info || {},
+        status: item.status as 'active' | 'sold' | 'pending',
+        views_count: item.views_count || 0,
+        enquiries_count: item.enquiries_count || 0,
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      }));
+
+      console.log(`Successfully fetched ${properties.length} properties`);
+      return properties;
+    } catch (error) {
+      console.error('Error fetching active properties:', error);
+      return [];
+    }
+  },
+
+  // Fetch all properties (admin)
+  async fetchAllProperties(): Promise<Property[]> {
+    try {
+      console.log('Fetching all properties from Supabase...');
       
-      // Clear properties cache after enquiry submission
-      cache.delete('properties');
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      // Transform data to match Property interface
+      const properties: Property[] = (data || []).map(item => ({
+        id: item.id,
+        image: item.image,
+        images: Array.isArray(item.images) ? item.images : (item.images ? [item.images] : []),
+        price: item.price,
+        location: item.location,
+        type: item.type,
+        bedrooms: item.bedrooms,
+        bathrooms: item.bathrooms,
+        sqft: item.sqft,
+        year_built: item.year_built,
+        description: item.description,
+        features: Array.isArray(item.features) ? item.features : [],
+        amenities: Array.isArray(item.amenities) ? item.amenities : [],
+        neighborhood_info: item.neighborhood_info || {},
+        status: item.status as 'active' | 'sold' | 'pending',
+        views_count: item.views_count || 0,
+        enquiries_count: item.enquiries_count || 0,
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      }));
+
+      console.log(`Successfully fetched ${properties.length} properties`);
+      return properties;
+    } catch (error) {
+      console.error('Error fetching all properties:', error);
+      return [];
+    }
+  },
+
+  // Fetch property by ID
+  async fetchPropertyById(id: string): Promise<Property | null> {
+    try {
+      console.log(`Fetching property ${id} from Supabase...`);
+      
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        console.error('Supabase error:', error);
+        return null;
+      }
+
+      if (!data) {
+        console.log('Property not found');
+        return null;
+      }
+
+      // Transform data to match Property interface
+      const property: Property = {
+        id: data.id,
+        image: data.image,
+        images: Array.isArray(data.images) ? data.images : (data.images ? [data.images] : []),
+        price: data.price,
+        location: data.location,
+        type: data.type,
+        bedrooms: data.bedrooms,
+        bathrooms: data.bathrooms,
+        sqft: data.sqft,
+        year_built: data.year_built,
+        description: data.description,
+        features: Array.isArray(data.features) ? data.features : [],
+        amenities: Array.isArray(data.amenities) ? data.amenities : [],
+        neighborhood_info: data.neighborhood_info || {},
+        status: data.status as 'active' | 'sold' | 'pending',
+        views_count: data.views_count || 0,
+        enquiries_count: data.enquiries_count || 0,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
+
+      console.log('Successfully fetched property:', property.location);
+      return property;
+    } catch (error) {
+      console.error('Error fetching property by ID:', error);
+      return null;
+    }
+  },
+
+  // Submit enquiry
+  async submitEnquiry(enquiryData: EnquiryData): Promise<boolean> {
+    try {
+      console.log('Submitting enquiry to Supabase:', enquiryData);
+      
+      // Prepare the enquiry data for insertion
+      const insertData = {
+        name: enquiryData.name,
+        email: enquiryData.email,
+        phone: enquiryData.phone,
+        message: enquiryData.message || null,
+        property_id: enquiryData.property_id || null,
+        property_details: enquiryData.property ? { property: enquiryData.property } : {}
+      };
+
+      const { error } = await supabase
+        .from('enquiries')
+        .insert([insertData]);
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Enquiry submitted successfully');
+
+      // Increment enquiry count for the property if property_id is provided
+      if (enquiryData.property_id) {
+        await supabase.rpc('increment_enquiry_count', { 
+          property_id: enquiryData.property_id
+        });
+      }
+
       return true;
     } catch (error) {
       console.error('Error submitting enquiry:', error);
@@ -174,232 +218,119 @@ export const databaseAPI = {
     }
   },
 
-  // Fixed property addition with proper FormData handling and CORS support
-  addProperty: async (propertyData: NewPropertyData, images: File[]): Promise<{ success: boolean; id?: number; message?: string }> => {
-    // Check if we're in Lovable environment (demo mode)
-    if (isLovableEnvironment()) {
-      console.log('Demo Mode: Property would be added:', propertyData);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return {
-        success: true,
-        id: Date.now(),
-        message: 'Property added successfully (Demo Mode)'
-      };
-    }
-
+  // Add property (admin)
+  async addProperty(propertyData: Omit<Property, 'id' | 'created_at' | 'updated_at' | 'views_count' | 'enquiries_count'>): Promise<boolean> {
     try {
-      console.log('Starting property addition process');
-      console.log('Property data:', propertyData);
-      console.log('Images count:', images.length);
+      console.log('Adding property to Supabase:', propertyData);
+      
+      const { error } = await supabase
+        .from('properties')
+        .insert([{
+          image: propertyData.image,
+          images: propertyData.images,
+          price: propertyData.price,
+          location: propertyData.location,
+          type: propertyData.type,
+          bedrooms: propertyData.bedrooms,
+          bathrooms: propertyData.bathrooms,
+          sqft: propertyData.sqft,
+          year_built: propertyData.year_built,
+          description: propertyData.description,
+          features: propertyData.features,
+          amenities: propertyData.amenities,
+          neighborhood_info: propertyData.neighborhood_info,
+          status: propertyData.status
+        }]);
 
-      const formData = new FormData();
-      
-      // Validate required fields
-      const requiredFields = ['price', 'location', 'type', 'bedrooms', 'bathrooms', 'sqft'];
-      for (const field of requiredFields) {
-        if (!propertyData[field as keyof NewPropertyData]) {
-          throw new Error(`Missing required field: ${field}`);
-        }
-      }
-      
-      // Append property data with proper handling
-      formData.append('price', propertyData.price);
-      formData.append('location', propertyData.location);
-      formData.append('type', propertyData.type);
-      formData.append('bedrooms', propertyData.bedrooms.toString());
-      formData.append('bathrooms', propertyData.bathrooms.toString());
-      formData.append('sqft', propertyData.sqft.toString());
-      formData.append('year_built', propertyData.year_built.toString());
-      formData.append('description', propertyData.description || '');
-      formData.append('features', JSON.stringify(propertyData.features || []));
-      formData.append('neighborhood_info', JSON.stringify(propertyData.neighborhood_info || {}));
-      
-      // Validate and append image files
-      if (images && images.length > 0) {
-        const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-        const maxFileSize = 5 * 1024 * 1024; // 5MB
-        
-        for (const image of images) {
-          if (!validImageTypes.includes(image.type)) {
-            throw new Error(`Invalid image type: ${image.type}. Allowed types: ${validImageTypes.join(', ')}`);
-          }
-          if (image.size > maxFileSize) {
-            throw new Error(`Image ${image.name} is too large. Maximum size is 5MB.`);
-          }
-          formData.append('images', image);
-        }
-      } else {
-        throw new Error('At least one image is required');
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
       }
 
-      console.log('Sending request to backend...');
-      
-      // Make request with proper CORS handling
-      const response = await fetch(`${API_BASE_URL}/properties`, {
-        method: 'POST',
-        body: formData,
-        mode: 'cors',
-        credentials: 'include'
-      });
-      
-      console.log('Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Backend error response:', errorText);
-        throw new Error(`Failed to add property: ${response.status} - ${errorText}`);
-      }
-      
-      const result = await response.json();
-      console.log('Backend success response:', result);
-      
-      // Clear cache after adding property
-      cache.delete('properties');
-      
-      return {
-        success: true,
-        id: result.id,
-        message: 'Property added successfully'
-      };
+      console.log('Property added successfully');
+      return true;
     } catch (error) {
       console.error('Error adding property:', error);
-      
-      // Provide more specific error messages
-      if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        return { 
-          success: false, 
-          message: 'Network error: Cannot connect to backend server. Please ensure the backend server is running on localhost:3001'
-        };
-      }
-      
-      return { 
-        success: false, 
-        message: error instanceof Error ? error.message : 'Failed to add property'
-      };
+      return false;
     }
   },
 
-  // Enhanced property fetching with improved image handling
-  fetchActiveProperties: async (): Promise<Property[]> => {
-    const cacheKey = 'properties';
-    const cached = cache.get(cacheKey);
-    
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      return cached.data;
-    }
-
-    // If in Lovable environment, return fallback data immediately
-    if (isLovableEnvironment()) {
-      console.log('Demo Mode: Using fallback properties');
-      const { fallbackProperties } = await import('@/data/fallbackProperties');
-      return fallbackProperties;
-    }
-
+  // Fetch enquiries (admin)
+  async fetchEnquiries(): Promise<any[]> {
     try {
-      console.log('Fetching properties from backend...');
+      console.log('Fetching enquiries from Supabase...');
       
-      const response = await fetch(`${API_BASE_URL}/properties`, {
-        headers: {
-          'Accept': 'application/json',
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch properties: ${response.status}`);
+      const { data, error } = await supabase
+        .from('enquiries')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
       }
-      
-      const properties = await response.json();
-      console.log('Fetched properties:', properties.length);
-      
-      // Process all properties to fix image URLs
-      const processedProperties = properties.map(processPropertyImages);
-      
-      // Cache the processed results
-      cache.set(cacheKey, {
-        data: processedProperties,
-        timestamp: Date.now()
-      });
-      
-      return processedProperties;
+
+      console.log(`Successfully fetched ${(data || []).length} enquiries`);
+      return data || [];
     } catch (error) {
-      console.error('Error fetching properties:', error);
-      // Fallback to demo data if backend fails
-      const { fallbackProperties } = await import('@/data/fallbackProperties');
-      return fallbackProperties;
+      console.error('Error fetching enquiries:', error);
+      return [];
     }
   },
 
-  // Enhanced property details fetching
-  fetchPropertyDetails: async (propertyId: number): Promise<Property | null> => {
-    if (isLovableEnvironment()) {
-      console.log('Demo Mode: Fetching property details for ID:', propertyId);
-      const { fallbackProperties } = await import('@/data/fallbackProperties');
-      return fallbackProperties.find(p => p.id === propertyId) || null;
-    }
-
+  // Track property view
+  async trackPropertyView(propertyId: string): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE_URL}/properties/${propertyId}`, {
-        headers: {
-          'Accept': 'application/json',
-        }
+      console.log(`Tracking view for property ${propertyId}`);
+      
+      // Increment view count
+      await supabase.rpc('increment_view_count', { 
+        property_id: propertyId
       });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch property details: ${response.status}`);
-      }
-      
-      const property = await response.json();
-      return processPropertyImages(property);
+
+      // Track analytics
+      await supabase
+        .from('property_analytics')
+        .insert([{
+          property_id: propertyId,
+          event_type: 'view',
+          user_ip: null, // Will be handled by RLS if needed
+          user_agent: navigator.userAgent
+        }]);
+
+      console.log('Property view tracked successfully');
     } catch (error) {
-      console.error('Error fetching property details:', error);
+      console.error('Error tracking property view:', error);
+    }
+  },
+
+  // Upload image to Supabase storage
+  async uploadImage(file: File, folder: string = 'properties'): Promise<string | null> {
+    try {
+      console.log(`Uploading image to Supabase storage: ${folder}`);
+      
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${folder}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('property-images')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('property-images')
+        .getPublicUrl(fileName);
+
+      console.log('Image uploaded successfully:', urlData.publicUrl);
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
       return null;
-    }
-  },
-
-  // Enhanced image fetching
-  fetchPropertyImages: async (propertyId: number): Promise<string[]> => {
-    if (isLovableEnvironment()) {
-      console.log('Demo Mode: Fetching images for property ID:', propertyId);
-      return ['/placeholder.svg'];
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/properties/${propertyId}/images`, {
-        headers: {
-          'Accept': 'application/json',
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch property images: ${response.status}`);
-      }
-
-      const images = await response.json();
-      return images.map(processImageUrl);
-    } catch (error) {
-      console.error('Error fetching property images:', error);
-      return ['/placeholder.svg'];
-    }
-  },
-
-  // Test connection to backend
-  testConnection: async (): Promise<boolean> => {
-    if (isLovableEnvironment()) {
-      console.log('Demo Mode: Backend connection test skipped');
-      return false;
-    }
-
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/health`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        }
-      });
-      return response.ok;
-    } catch (error) {
-      console.error('Backend connection test failed:', error);
-      return false;
     }
   }
 };

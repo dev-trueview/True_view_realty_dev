@@ -15,6 +15,7 @@ import TestimonialsSection from "@/components/TestimonialsSection";
 import WhyChooseUsSection from "@/components/WhyChooseUsSection";
 import Footer from "@/components/Footer";
 import { useProperties } from "@/hooks/useProperties";
+import { databaseAPI } from "@/utils/database";
 
 const Index = () => {
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
@@ -27,8 +28,8 @@ const Index = () => {
   const [showAutoPopup, setShowAutoPopup] = useState(false);
   const { toast } = useToast();
 
-  // Use the custom hook to fetch properties from database
-  const { properties, loading, error } = useProperties();
+  // Use the custom hook to fetch properties from Supabase
+  const { properties, loading, error, refetch } = useProperties();
 
   // Check localStorage for enquiry submission status
   useEffect(() => {
@@ -76,9 +77,14 @@ const Index = () => {
     setShowAutoPopup(false);
   };
 
-  const handleViewDetails = (property: any) => {
+  const handleViewDetails = async (property: any) => {
     setSelectedProperty(property);
     setShowDetailsModal(true);
+    
+    // Track property view
+    if (property.id) {
+      await databaseAPI.trackPropertyView(property.id);
+    }
   };
 
   const handleFormSubmit = (formData: any) => {
@@ -93,6 +99,9 @@ const Index = () => {
     setShowEnquiryModal(false);
     setShowAutoPopup(false);
     setSelectedProperty(null);
+    
+    // Refresh properties to update enquiry counts
+    refetch();
   };
 
   const handleCloseAutoPopup = () => {
@@ -111,7 +120,7 @@ const Index = () => {
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-lg text-gray-600">Loading properties...</p>
+            <p className="text-lg text-gray-600">Loading properties from Supabase...</p>
           </div>
         </div>
       </div>
@@ -125,7 +134,7 @@ const Index = () => {
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <p className="text-lg text-red-600 mb-4">{error}</p>
-            <Button onClick={() => window.location.reload()}>Retry</Button>
+            <Button onClick={() => refetch()}>Retry</Button>
           </div>
         </div>
       </div>
@@ -195,17 +204,24 @@ const Index = () => {
       <section className="py-16">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">Active Properties</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProperties.map((property) => (
-              <PropertyCard
-                key={property.id}
-                property={property}
-                onEnquiry={() => handleEnquiry(property)}
-                onViewDetails={() => handleViewDetails(property)}
-              />
-            ))}
-          </div>
-          {filteredProperties.length === 0 && (
+          {properties.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredProperties.map((property) => (
+                <PropertyCard
+                  key={property.id}
+                  property={property}
+                  onEnquiry={() => handleEnquiry(property)}
+                  onViewDetails={() => handleViewDetails(property)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">No properties available at the moment.</p>
+              <p className="text-gray-400">Please check back later or contact us for more information.</p>
+            </div>
+          )}
+          {filteredProperties.length === 0 && properties.length > 0 && (
             <div className="text-center py-12">
               <p className="text-gray-500 text-lg">No properties found matching your criteria.</p>
               <p className="text-gray-400">Try adjusting your search filters.</p>
