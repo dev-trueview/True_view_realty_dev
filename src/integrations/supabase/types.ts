@@ -14,7 +14,178 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      enquiries: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string | null
+          name: string
+          phone: string
+          property_details: Json | null
+          property_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message?: string | null
+          name: string
+          phone: string
+          property_details?: Json | null
+          property_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string | null
+          name?: string
+          phone?: string
+          property_details?: Json | null
+          property_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enquiries_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          role: string
+          updated_at: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: string
+          updated_at?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: string
+          updated_at?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      properties: {
+        Row: {
+          amenities: Json | null
+          bathrooms: number
+          bedrooms: number
+          created_at: string
+          description: string | null
+          enquiries_count: number | null
+          features: Json | null
+          id: string
+          image: string | null
+          images: Json | null
+          location: string
+          neighborhood_info: Json | null
+          price: string
+          sqft: number
+          status: string
+          type: string
+          updated_at: string
+          views_count: number | null
+          year_built: number | null
+        }
+        Insert: {
+          amenities?: Json | null
+          bathrooms: number
+          bedrooms: number
+          created_at?: string
+          description?: string | null
+          enquiries_count?: number | null
+          features?: Json | null
+          id?: string
+          image?: string | null
+          images?: Json | null
+          location: string
+          neighborhood_info?: Json | null
+          price: string
+          sqft: number
+          status?: string
+          type: string
+          updated_at?: string
+          views_count?: number | null
+          year_built?: number | null
+        }
+        Update: {
+          amenities?: Json | null
+          bathrooms?: number
+          bedrooms?: number
+          created_at?: string
+          description?: string | null
+          enquiries_count?: number | null
+          features?: Json | null
+          id?: string
+          image?: string | null
+          images?: Json | null
+          location?: string
+          neighborhood_info?: Json | null
+          price?: string
+          sqft?: number
+          status?: string
+          type?: string
+          updated_at?: string
+          views_count?: number | null
+          year_built?: number | null
+        }
+        Relationships: []
+      }
+      property_analytics: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          property_id: string | null
+          user_agent: string | null
+          user_ip: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          property_id?: string | null
+          user_agent?: string | null
+          user_ip?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          property_id?: string | null
+          user_agent?: string | null
+          user_ip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_analytics_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
