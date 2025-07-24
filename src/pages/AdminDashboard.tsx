@@ -1,8 +1,9 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { adminAuth } from '@/utils/adminAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { databaseAPI } from '@/utils/database';
+import type { User } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -30,25 +31,77 @@ const AdminDashboard = () => {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Check authentication
-    const authStatus = adminAuth.isAuthenticated();
-    setIsAuthenticated(authStatus);
-    
-    if (!authStatus) {
-      toast({
-        title: "Access Denied",
-        description: "Please log in to access the admin dashboard",
-        variant: "destructive",
-      });
-      navigate('/');
-      return;
-    }
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          setUser(session.user);
+          
+          // Check if user has admin role
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .single();
+          
+          if (profile && ['admin', 'super_admin'].includes(profile.role)) {
+            setIsAdmin(true);
+            fetchAnalyticsData();
+          } else {
+            setIsAdmin(false);
+            toast({
+              title: "Access Denied",
+              description: "Admin privileges required",
+              variant: "destructive",
+            });
+            navigate('/');
+          }
+        } else {
+          setUser(null);
+          setIsAdmin(false);
+          toast({
+            title: "Access Denied",
+            description: "Please log in to access the admin dashboard",
+            variant: "destructive",
+          });
+          navigate('/');
+        }
+      }
+    );
 
-    // Fetch analytics data
-    fetchAnalyticsData();
+    // Check current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user);
+        
+        // Check admin role for current user
+        supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .single()
+          .then(({ data: profile }) => {
+            if (profile && ['admin', 'super_admin'].includes(profile.role)) {
+              setIsAdmin(true);
+              fetchAnalyticsData();
+            } else {
+              setIsAdmin(false);
+              toast({
+                title: "Access Denied",
+                description: "Admin privileges required",
+                variant: "destructive",
+              });
+              navigate('/');
+            }
+          });
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate, toast]);
 
   const fetchAnalyticsData = async () => {
@@ -110,9 +163,10 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleLogout = () => {
-    adminAuth.logout();
-    setIsAuthenticated(false);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setIsAdmin(false);
     toast({
       title: "Logged Out",
       description: "You have been successfully logged out",
@@ -131,8 +185,8 @@ const AdminDashboard = () => {
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
-  // Show login form if not authenticated
-  if (!isAuthenticated) {
+  // Show login form if not authenticated or not admin
+  if (!user || !isAdmin) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 flex items-center justify-center">
         <div className="text-center">

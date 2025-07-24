@@ -3,69 +3,109 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { adminAuth } from '@/utils/adminAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Eye, EyeOff } from 'lucide-react';
 
 interface AdminLoginProps {
   showTrigger?: boolean;
+  onSuccess?: () => void;
 }
 
-const AdminLogin = ({ showTrigger = true }: AdminLoginProps) => {
+const AdminLogin = ({ showTrigger = true, onSuccess }: AdminLoginProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSignup, setIsSignup] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Don't show login if already authenticated
-  if (!showTrigger || adminAuth.isAuthenticated()) {
-    return null;
-  }
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      console.log('Attempting login with:', { username: username.trim() });
-      
-      if (adminAuth.authenticate(username, password)) {
-        const sessionCreated = adminAuth.createSession(username);
-        
-        if (sessionCreated) {
+      if (isSignup) {
+        // Sign up new admin user
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/admin-dashboard`
+          }
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        if (data.user) {
+          // Promote user to admin using our database function
+          const { error: promoteError } = await supabase.rpc('promote_user_to_admin', {
+            user_email: email
+          });
+
+          if (promoteError) {
+            console.error('Error promoting user to admin:', promoteError);
+          }
+
+          toast({
+            title: "Account Created",
+            description: "Admin account created successfully. You can now log in.",
+          });
+          
+          setIsSignup(false);
+          setEmail('');
+          setPassword('');
+        }
+      } else {
+        // Sign in with Supabase
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        if (data.user) {
+          // Check if user has admin role
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('user_id', data.user.id)
+            .single();
+
+          if (profileError || !profile || !['admin', 'super_admin'].includes(profile.role)) {
+            await supabase.auth.signOut();
+            throw new Error('Access denied. Admin privileges required.');
+          }
+
           toast({
             title: "Login Successful",
             description: "Welcome to the admin dashboard",
           });
+          
           setIsOpen(false);
-          setUsername('');
+          setEmail('');
           setPassword('');
-          navigate('/admin-dashboard');
-        } else {
-          toast({
-            title: "Session Error",
-            description: "Failed to create admin session. Please try again.",
-            variant: "destructive",
-          });
+          
+          if (onSuccess) {
+            onSuccess();
+          } else {
+            navigate('/admin-dashboard');
+          }
         }
-      } else {
-        toast({
-          title: "Login Failed",
-          description: "Invalid username or password. Please check your credentials and try again.",
-          variant: "destructive",
-        });
       }
-    } catch (error) {
-      console.error('Login error:', error);
+    } catch (error: any) {
+      console.error('Auth error:', error);
       toast({
-        title: "Login Error",
-        description: "An unexpected error occurred during login. Please try again.",
+        title: isSignup ? "Signup Failed" : "Login Failed",
+        description: error.message || (isSignup ? "Failed to create account" : "Invalid email or password"),
         variant: "destructive",
       });
     } finally {
@@ -75,9 +115,10 @@ const AdminLogin = ({ showTrigger = true }: AdminLoginProps) => {
 
   const handleClose = () => {
     setIsOpen(false);
-    setUsername('');
+    setEmail('');
     setPassword('');
     setShowPassword(false);
+    setIsSignup(false);
   };
 
   return (
@@ -94,18 +135,20 @@ const AdminLogin = ({ showTrigger = true }: AdminLoginProps) => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-md bg-gradient-to-br from-slate-900 to-slate-800 border-gray-700 shadow-2xl" onInteractOutside={handleClose}>
         <DialogHeader>
-          <DialogTitle className="text-cyan-400 text-center text-xl font-bold">Admin Access</DialogTitle>
+          <DialogTitle className="text-cyan-400 text-center text-xl font-bold">
+            {isSignup ? 'Create Admin Account' : 'Admin Access'}
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Input
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              type="email"
+              placeholder="Admin Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="bg-slate-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 transition-colors"
               required
-              autoComplete="username"
+              autoComplete="email"
             />
           </div>
           <div className="relative">
@@ -136,12 +179,23 @@ const AdminLogin = ({ showTrigger = true }: AdminLoginProps) => {
             {isLoading ? (
               <div className="flex items-center justify-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Logging in...
+                {isSignup ? 'Creating Account...' : 'Logging in...'}
               </div>
             ) : (
-              'Login'
+              isSignup ? 'Create Account' : 'Login'
             )}
           </Button>
+          
+          <div className="text-center">
+            <Button
+              type="button"
+              variant="link"
+              className="text-cyan-400 hover:text-cyan-300 text-sm"
+              onClick={() => setIsSignup(!isSignup)}
+            >
+              {isSignup ? 'Already have an account? Login' : 'Need an admin account? Sign up'}
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
