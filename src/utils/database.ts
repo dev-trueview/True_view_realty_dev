@@ -1,6 +1,22 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
+export interface NewPropertyData {
+  price: string;
+  location: string;
+  type: string;
+  bedrooms: number;
+  bathrooms: number;
+  sqft: number;
+  year_built?: number;
+  description?: string;
+  features: string[];
+  amenities?: string[];
+  neighborhood_info: any;
+  image?: string;
+  images?: string[];
+}
+
 export interface Property {
   id: string;
   image: string | null;
@@ -53,7 +69,7 @@ export const databaseAPI = {
       const properties: Property[] = (data || []).map(item => ({
         id: item.id,
         image: item.image,
-        images: Array.isArray(item.images) ? item.images : (item.images ? [item.images] : []),
+        images: Array.isArray(item.images) ? item.images.map(img => String(img)) : (item.images ? [String(item.images)] : []),
         price: item.price,
         location: item.location,
         type: item.type,
@@ -62,8 +78,8 @@ export const databaseAPI = {
         sqft: item.sqft,
         year_built: item.year_built,
         description: item.description,
-        features: Array.isArray(item.features) ? item.features : [],
-        amenities: Array.isArray(item.amenities) ? item.amenities : [],
+        features: Array.isArray(item.features) ? item.features.map(f => String(f)) : [],
+        amenities: Array.isArray(item.amenities) ? item.amenities.map(a => String(a)) : [],
         neighborhood_info: item.neighborhood_info || {},
         status: item.status as 'active' | 'sold' | 'pending',
         views_count: item.views_count || 0,
@@ -99,7 +115,7 @@ export const databaseAPI = {
       const properties: Property[] = (data || []).map(item => ({
         id: item.id,
         image: item.image,
-        images: Array.isArray(item.images) ? item.images : (item.images ? [item.images] : []),
+        images: Array.isArray(item.images) ? item.images.map(img => String(img)) : (item.images ? [String(item.images)] : []),
         price: item.price,
         location: item.location,
         type: item.type,
@@ -108,8 +124,8 @@ export const databaseAPI = {
         sqft: item.sqft,
         year_built: item.year_built,
         description: item.description,
-        features: Array.isArray(item.features) ? item.features : [],
-        amenities: Array.isArray(item.amenities) ? item.amenities : [],
+        features: Array.isArray(item.features) ? item.features.map(f => String(f)) : [],
+        amenities: Array.isArray(item.amenities) ? item.amenities.map(a => String(a)) : [],
         neighborhood_info: item.neighborhood_info || {},
         status: item.status as 'active' | 'sold' | 'pending',
         views_count: item.views_count || 0,
@@ -151,7 +167,7 @@ export const databaseAPI = {
       const property: Property = {
         id: data.id,
         image: data.image,
-        images: Array.isArray(data.images) ? data.images : (data.images ? [data.images] : []),
+        images: Array.isArray(data.images) ? data.images.map(img => String(img)) : (data.images ? [String(data.images)] : []),
         price: data.price,
         location: data.location,
         type: data.type,
@@ -160,8 +176,8 @@ export const databaseAPI = {
         sqft: data.sqft,
         year_built: data.year_built,
         description: data.description,
-        features: Array.isArray(data.features) ? data.features : [],
-        amenities: Array.isArray(data.amenities) ? data.amenities : [],
+        features: Array.isArray(data.features) ? data.features.map(f => String(f)) : [],
+        amenities: Array.isArray(data.amenities) ? data.amenities.map(a => String(a)) : [],
         neighborhood_info: data.neighborhood_info || {},
         status: data.status as 'active' | 'sold' | 'pending',
         views_count: data.views_count || 0,
@@ -206,9 +222,23 @@ export const databaseAPI = {
 
       // Increment enquiry count for the property if property_id is provided
       if (enquiryData.property_id) {
-        await supabase.rpc('increment_enquiry_count', { 
-          property_id: enquiryData.property_id
-        });
+        try {
+          // Get current count and increment
+          const { data: property } = await supabase
+            .from('properties')
+            .select('enquiries_count')
+            .eq('id', enquiryData.property_id)
+            .single();
+          
+          if (property) {
+            await supabase
+              .from('properties')
+              .update({ enquiries_count: (property.enquiries_count || 0) + 1 })
+              .eq('id', enquiryData.property_id);
+          }
+        } catch (rpcError) {
+          console.error('Error incrementing enquiry count:', rpcError);
+        }
       }
 
       return true;
@@ -219,15 +249,15 @@ export const databaseAPI = {
   },
 
   // Add property (admin)
-  async addProperty(propertyData: Omit<Property, 'id' | 'created_at' | 'updated_at' | 'views_count' | 'enquiries_count'>): Promise<boolean> {
+  async addProperty(propertyData: NewPropertyData): Promise<boolean> {
     try {
       console.log('Adding property to Supabase:', propertyData);
       
       const { error } = await supabase
         .from('properties')
         .insert([{
-          image: propertyData.image,
-          images: propertyData.images,
+          image: propertyData.image || null,
+          images: propertyData.images || [],
           price: propertyData.price,
           location: propertyData.location,
           type: propertyData.type,
@@ -237,9 +267,9 @@ export const databaseAPI = {
           year_built: propertyData.year_built,
           description: propertyData.description,
           features: propertyData.features,
-          amenities: propertyData.amenities,
+          amenities: propertyData.amenities || [],
           neighborhood_info: propertyData.neighborhood_info,
-          status: propertyData.status
+          status: 'active'
         }]);
 
       if (error) {
@@ -284,9 +314,23 @@ export const databaseAPI = {
       console.log(`Tracking view for property ${propertyId}`);
       
       // Increment view count
-      await supabase.rpc('increment_view_count', { 
-        property_id: propertyId
-      });
+      try {
+        // Get current count and increment
+        const { data: property } = await supabase
+          .from('properties')
+          .select('views_count')
+          .eq('id', propertyId)
+          .single();
+        
+        if (property) {
+          await supabase
+            .from('properties')
+            .update({ views_count: (property.views_count || 0) + 1 })
+            .eq('id', propertyId);
+        }
+      } catch (rpcError) {
+        console.error('Error incrementing view count:', rpcError);
+      }
 
       // Track analytics
       await supabase

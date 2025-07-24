@@ -11,7 +11,7 @@ interface PropertyDetailsModalProps {
   onClose: () => void;
   onEnquiry: () => void;
   property: {
-    id: number;
+    id: string | number;
     image: string;
     price: string;
     location: string;
@@ -32,13 +32,14 @@ const PropertyDetailsModal = ({ isOpen, onClose, onEnquiry, property }: Property
       setLoading(true);
       const fetchDetails = async () => {
         try {
-          const details = await databaseAPI.fetchPropertyDetails(property.id);
+          const details = await databaseAPI.fetchPropertyById(String(property.id));
           if (details) {
             setDetailedProperty(details);
           } else {
             // Fallback to basic property data with default values
             setDetailedProperty({
               ...property,
+              id: String(property.id),
               status: 'active',
               description: `This stunning modern ${property.type.toLowerCase()} offers the perfect blend of luxury and comfort in ${property.location}.`,
               features: [
@@ -47,6 +48,7 @@ const PropertyDetailsModal = ({ isOpen, onClose, onEnquiry, property }: Property
                 "In-unit washer and dryer",
                 "Private balcony with city views"
               ],
+              amenities: ["Swimming Pool", "Gym", "Parking"],
               year_built: 2019,
               neighborhood_info: {
                 walkScore: 95,
@@ -56,7 +58,11 @@ const PropertyDetailsModal = ({ isOpen, onClose, onEnquiry, property }: Property
                 shopping: "World-class",
                 dining: "Outstanding"
               },
-              images: [property.image, property.image, property.image]
+              images: [property.image, property.image, property.image],
+              views_count: 0,
+              enquiries_count: 0,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             });
           }
         } catch (error) {
@@ -64,10 +70,17 @@ const PropertyDetailsModal = ({ isOpen, onClose, onEnquiry, property }: Property
           // Use basic property data as fallback
           setDetailedProperty({
             ...property,
+            id: String(property.id),
             status: 'active',
             description: `Property in ${property.location}`,
             features: [],
-            images: [property.image]
+            amenities: [],
+            neighborhood_info: {},
+            images: [property.image],
+            views_count: 0,
+            enquiries_count: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           });
         } finally {
           setLoading(false);

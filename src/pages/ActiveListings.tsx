@@ -22,7 +22,7 @@ const ActiveListings = () => {
   const { toast } = useToast();
 
   // Use the same hook as Index page for consistency
-  const { properties, loading, error, usingFallback } = useProperties();
+  const { properties, loading, error } = useProperties();
 
   const filteredProperties = properties.filter(property => {
     const matchesLocation = !searchLocation || property.location.toLowerCase().includes(searchLocation.toLowerCase());
@@ -79,11 +79,6 @@ const ActiveListings = () => {
           <p className="text-xl text-blue-100 max-w-2xl mx-auto">
             Discover your dream home from our curated collection of premium properties
           </p>
-          {usingFallback && (
-            <p className="text-sm text-blue-200 mt-2">
-              Currently showing demo properties (Backend offline)
-            </p>
-          )}
         </div>
       </section>
 

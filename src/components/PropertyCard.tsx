@@ -7,7 +7,7 @@ import { useState } from "react";
 
 interface PropertyCardProps {
   property: {
-    id: number;
+    id: string | number;
     image: string;
     price: string;
     location: string;

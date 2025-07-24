@@ -115,12 +115,12 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
       console.log('Submitting property data:', propertyData);
       console.log('Images to upload:', images.length);
 
-      const result = await databaseAPI.addProperty(propertyData, images);
+      const result = await databaseAPI.addProperty(propertyData);
 
-      if (result.success) {
+      if (result) {
         toast({
           title: "Property Added Successfully",
-          description: result.message || "The new property listing has been created",
+          description: "The new property listing has been created",
         });
         
         // Reset form
@@ -150,7 +150,7 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
       } else {
         toast({
           title: "Error",
-          description: result.message || "Failed to add property",
+          description: "Failed to add property",
           variant: "destructive"
         });
       }
