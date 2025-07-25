@@ -19,7 +19,9 @@ import { useToast } from '@/hooks/use-toast';
 interface AnalyticsData {
   totalProperties: number;
   totalEnquiries: number;
+  totalSubscribers: number;
   recentEnquiries: any[];
+  newsletterSubscriptions: any[];
   propertyByType: { name: string; value: number }[];
   propertyByLocation: { name: string; value: number }[];
   enquiriesByMonth: { month: string; count: number }[];
@@ -110,9 +112,10 @@ const AdminDashboard = () => {
       console.log('Fetching analytics data...');
       
       // Fetch data from Supabase
-      const [properties, enquiries] = await Promise.all([
+      const [properties, enquiries, subscriptions] = await Promise.all([
         databaseAPI.fetchAllProperties(),
-        databaseAPI.fetchEnquiries()
+        databaseAPI.fetchEnquiries(),
+        databaseAPI.fetchNewsletterSubscriptions()
       ]);
 
       console.log('Properties fetched:', properties.length);
@@ -143,7 +146,9 @@ const AdminDashboard = () => {
       const analyticsData: AnalyticsData = {
         totalProperties: properties.length,
         totalEnquiries: enquiries.length,
+        totalSubscribers: subscriptions.length,
         recentEnquiries: enquiries.slice(0, 10),
+        newsletterSubscriptions: subscriptions.slice(0, 20),
         propertyByType: Object.entries(propertyByType).map(([name, value]) => ({ name, value: value as number })),
         propertyByLocation: Object.entries(propertyByLocation).map(([name, value]) => ({ name, value: value as number })),
         enquiriesByMonth: Object.entries(enquiriesByMonth).map(([month, count]) => ({ month, count: count as number }))
@@ -231,10 +236,14 @@ const AdminDashboard = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 bg-slate-800/50">
+          <TabsList className="grid w-full grid-cols-3 bg-slate-800/50">
             <TabsTrigger value="overview" className="text-white">
               <Building className="w-4 h-4 mr-2" />
               Overview
+            </TabsTrigger>
+            <TabsTrigger value="subscribers" className="text-white">
+              <Users className="w-4 h-4 mr-2" />
+              Subscribers
             </TabsTrigger>
             <TabsTrigger value="add-property" className="text-white">
               <Plus className="w-4 h-4 mr-2" />
@@ -267,11 +276,11 @@ const AdminDashboard = () => {
 
               <Card className="bg-slate-800/50 border-cyan-500/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-300">Active Listings</CardTitle>
-                  <Home className="h-4 w-4 text-cyan-400" />
+                  <CardTitle className="text-sm font-medium text-gray-300">Newsletter Subscribers</CardTitle>
+                  <Users className="h-4 w-4 text-cyan-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-white">{analyticsData?.totalProperties || 0}</div>
+                  <div className="text-2xl font-bold text-white">{analyticsData?.totalSubscribers || 0}</div>
                 </CardContent>
               </Card>
 
@@ -281,7 +290,7 @@ const AdminDashboard = () => {
                   <Database className="h-4 w-4 text-cyan-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-400">Supabase</div>
+                  <div className="text-2xl font-bold text-green-400">Active</div>
                 </CardContent>
               </Card>
             </div>
@@ -363,6 +372,42 @@ const AdminDashboard = () => {
                         </TableCell>
                         <TableCell className="text-gray-300">
                           {new Date(enquiry.created_at).toLocaleDateString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="subscribers" className="space-y-6">
+            {/* Newsletter Subscribers Table */}
+            <Card className="bg-slate-800/50 border-cyan-500/20">
+              <CardHeader>
+                <CardTitle className="text-white">Newsletter Subscribers</CardTitle>
+                <CardDescription className="text-gray-300">Users subscribed to property updates</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-gray-300">Email</TableHead>
+                      <TableHead className="text-gray-300">Subscribed Date</TableHead>
+                      <TableHead className="text-gray-300">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {analyticsData?.newsletterSubscriptions.map((subscription, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="text-white">{subscription.email}</TableCell>
+                        <TableCell className="text-gray-300">
+                          {new Date(subscription.subscribed_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-gray-300">
+                          <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">
+                            Active
+                          </span>
                         </TableCell>
                       </TableRow>
                     ))}

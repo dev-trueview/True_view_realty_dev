@@ -20,6 +20,7 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [features, setFeatures] = useState<string[]>(['']);
+  const [customType, setCustomType] = useState(false);
   
   // Check if we're in demo mode
   const isDemo = window.location.hostname.includes('lovableproject.com') || 
@@ -227,18 +228,51 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
                 tooltip="Select the type of property from the dropdown options"
                 htmlFor="type"
               >
-                <Select value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
-                  <SelectTrigger className="bg-slate-800/50 border-gray-600 text-white">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Apartment">Apartment</SelectItem>
-                    <SelectItem value="Villa">Villa</SelectItem>
-                    <SelectItem value="Condo">Condo</SelectItem>
-                    <SelectItem value="Townhouse">Townhouse</SelectItem>
-                    <SelectItem value="Penthouse">Penthouse</SelectItem>
-                  </SelectContent>
-                </Select>
+                {customType ? (
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Enter custom property type"
+                      value={formData.type}
+                      onChange={(e) => handleInputChange('type', e.target.value)}
+                      className="bg-slate-800/50 border-gray-600 text-white"
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setCustomType(false);
+                        handleInputChange('type', '');
+                      }}
+                      className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-white"
+                    >
+                      Use Dropdown Instead
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Select value={formData.type} onValueChange={(value) => {
+                      if (value === 'Other') {
+                        setCustomType(true);
+                        handleInputChange('type', '');
+                      } else {
+                        handleInputChange('type', value);
+                      }
+                    }}>
+                      <SelectTrigger className="bg-slate-800/50 border-gray-600 text-white">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Apartment">Apartment</SelectItem>
+                        <SelectItem value="Villa">Villa</SelectItem>
+                        <SelectItem value="Condo">Condo</SelectItem>
+                        <SelectItem value="Townhouse">Townhouse</SelectItem>
+                        <SelectItem value="Penthouse">Penthouse</SelectItem>
+                        <SelectItem value="Other">Other (Custom)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </FormFieldWithTooltip>
               
               <FormFieldWithTooltip

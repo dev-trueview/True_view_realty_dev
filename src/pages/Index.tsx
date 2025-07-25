@@ -49,9 +49,9 @@ const Index = () => {
       }
     };
 
-    // Show popup after 1 minute initially, then every minute
-    const initialTimeout = setTimeout(showPopup, 60000); // 1 minute
-    const interval = setInterval(showPopup, 60000); // Every minute
+    // Show popup after 30 seconds initially, then every 30 seconds
+    const initialTimeout = setTimeout(showPopup, 30000); // 30 seconds
+    const interval = setInterval(showPopup, 30000); // Every 30 seconds
 
     return () => {
       clearTimeout(initialTimeout);
@@ -96,6 +96,11 @@ const Index = () => {
       title: "Enquiry Submitted Successfully!",
       description: "Our agent will contact you within 24 hours.",
     });
+    
+    // Auto-close toast after 4 seconds
+    setTimeout(() => {
+      // This is handled by the toast component automatically
+    }, 4000);
     setShowEnquiryModal(false);
     setShowAutoPopup(false);
     setSelectedProperty(null);
@@ -120,7 +125,7 @@ const Index = () => {
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-lg text-gray-600">Loading properties from Supabase...</p>
+            <p className="text-lg text-gray-600">Loading properties...</p>
           </div>
         </div>
       </div>

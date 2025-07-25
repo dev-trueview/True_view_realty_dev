@@ -68,7 +68,7 @@ export const databaseAPI = {
       // Transform data to match Property interface
       const properties: Property[] = (data || []).map(item => ({
         id: item.id,
-        image: item.image,
+        image: typeof item.image === 'string' ? item.image : (Array.isArray(item.images) && item.images.length > 0 ? String(item.images[0]) : null),
         images: Array.isArray(item.images) ? item.images.map(img => String(img)) : (item.images ? [String(item.images)] : []),
         price: item.price,
         location: item.location,
@@ -114,7 +114,7 @@ export const databaseAPI = {
       // Transform data to match Property interface
       const properties: Property[] = (data || []).map(item => ({
         id: item.id,
-        image: item.image,
+        image: typeof item.image === 'string' ? item.image : (Array.isArray(item.images) && item.images.length > 0 ? String(item.images[0]) : null),
         images: Array.isArray(item.images) ? item.images.map(img => String(img)) : (item.images ? [String(item.images)] : []),
         price: item.price,
         location: item.location,
@@ -166,7 +166,7 @@ export const databaseAPI = {
       // Transform data to match Property interface
       const property: Property = {
         id: data.id,
-        image: data.image,
+        image: typeof data.image === 'string' ? data.image : null,
         images: Array.isArray(data.images) ? data.images.map(img => String(img)) : (data.images ? [String(data.images)] : []),
         price: data.price,
         location: data.location,
@@ -282,6 +282,30 @@ export const databaseAPI = {
     } catch (error) {
       console.error('Error adding property:', error);
       return false;
+    }
+  },
+
+  // Fetch newsletter subscriptions (admin)
+  async fetchNewsletterSubscriptions(): Promise<any[]> {
+    try {
+      console.log('Fetching newsletter subscriptions from Supabase...');
+      
+      const { data, error } = await supabase
+        .from('newsletter_subscriptions')
+        .select('*')
+        .eq('is_active', true)
+        .order('subscribed_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching newsletter subscriptions:', error);
+        return [];
+      }
+
+      console.log(`Successfully fetched ${data?.length || 0} newsletter subscriptions`);
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching newsletter subscriptions:', error);
+      return [];
     }
   },
 

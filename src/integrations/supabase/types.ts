@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       enquiries: {
         Row: {
+          contact_type: string | null
           created_at: string
           email: string
           id: string
@@ -27,6 +28,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          contact_type?: string | null
           created_at?: string
           email: string
           id?: string
@@ -38,6 +40,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          contact_type?: string | null
           created_at?: string
           email?: string
           id?: string
@@ -57,6 +60,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      newsletter_subscriptions: {
+        Row: {
+          email: string
+          id: string
+          is_active: boolean
+          subscribed_at: string
+        }
+        Insert: {
+          email: string
+          id?: string
+          is_active?: boolean
+          subscribed_at?: string
+        }
+        Update: {
+          email?: string
+          id?: string
+          is_active?: boolean
+          subscribed_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
