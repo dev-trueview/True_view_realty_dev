@@ -138,7 +138,7 @@ const Footer = () => {
         <div className="border-t border-gray-700 mt-8 pt-8">
           {!isAdminPage && (
             <div className="mb-4 text-center">
-              <p className="text-cyan-400 font-medium">RERA ID: P52100056325</p>
+              <p className="text-cyan-400 font-medium">RERA ID: A011262501596</p>
             </div>
           )}
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">

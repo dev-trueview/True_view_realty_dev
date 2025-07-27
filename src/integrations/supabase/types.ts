@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_users: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          username: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          is_active?: boolean
+          username?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          is_active?: boolean
+          username?: string | null
+        }
+        Relationships: []
+      }
       enquiries: {
         Row: {
           contact_type: string | null
@@ -60,6 +84,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      hero_slides: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string
+          is_active: boolean
+          subtitle: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url: string
+          is_active?: boolean
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       newsletter_subscriptions: {
         Row: {
@@ -209,6 +266,68 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      property_images: {
+        Row: {
+          alt_text: string | null
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string
+          is_primary: boolean
+          property_id: string
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url: string
+          is_primary?: boolean
+          property_id: string
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string
+          is_primary?: boolean
+          property_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_images_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_sessions: {
+        Row: {
+          created_at: string
+          enquiry_submitted: boolean
+          expires_at: string
+          id: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          enquiry_submitted?: boolean
+          expires_at?: string
+          id?: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          enquiry_submitted?: boolean
+          expires_at?: string
+          id?: string
+          session_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

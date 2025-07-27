@@ -22,9 +22,7 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
   const [features, setFeatures] = useState<string[]>(['']);
   const [customType, setCustomType] = useState(false);
   
-  // Check if we're in demo mode
-  const isDemo = window.location.hostname.includes('lovableproject.com') || 
-                 window.location.hostname.includes('lovable.dev');
+  // Production mode - no demo messages
   
   const [formData, setFormData] = useState<NewPropertyData>({
     price: '',
@@ -169,19 +167,6 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
 
   return (
     <div className="space-y-4">
-      {/* Demo Mode Notice */}
-      {isDemo && (
-        <div className="bg-blue-900/50 border border-blue-500/30 rounded-lg p-4 mb-4">
-          <div className="flex items-center gap-2 text-blue-200">
-            <Info className="w-5 h-5" />
-            <span className="font-medium">Demo Mode Active</span>
-          </div>
-          <p className="text-blue-300 mt-1 text-sm">
-            You're running in demo mode. Property submissions will be simulated since no backend server is connected.
-            To enable full functionality, run the backend server on localhost:3001.
-          </p>
-        </div>
-      )}
 
       <Card className="bg-slate-800/50 border-cyan-500/20">
         <CardHeader>

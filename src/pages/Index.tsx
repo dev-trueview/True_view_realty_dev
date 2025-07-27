@@ -7,7 +7,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
-import PropertyCarousel from "@/components/PropertyCarousel";
+import DynamicHeroCarousel from "@/components/DynamicHeroCarousel";
+import SessionBasedEnquiry from "@/components/SessionBasedEnquiry";
+import PropertyFilters from "@/components/PropertyFilters";
 import PropertyCard from "@/components/PropertyCard";
 import PropertyDetailsModal from "@/components/PropertyDetailsModal";
 import EnquiryForm from "@/components/EnquiryForm";
@@ -26,43 +28,77 @@ const Index = () => {
   const [propertyType, setPropertyType] = useState("");
   const [hasSubmittedEnquiry, setHasSubmittedEnquiry] = useState(false);
   const [showAutoPopup, setShowAutoPopup] = useState(false);
+  const [filters, setFilters] = useState<any>({});
+  const [showGlobalEnquiry, setShowGlobalEnquiry] = useState(false);
   const { toast } = useToast();
 
   // Use the custom hook to fetch properties from Supabase
   const { properties, loading, error, refetch } = useProperties();
 
-  // Check localStorage for enquiry submission status
+  // Check sessionStorage for enquiry submission status
   useEffect(() => {
-    const enquirySubmitted = localStorage.getItem('enquirySubmitted');
+    const enquirySubmitted = sessionStorage.getItem('enquiry_submitted');
     if (enquirySubmitted === 'true') {
       setHasSubmittedEnquiry(true);
     }
   }, []);
 
-  // Auto popup functionality - show every minute unless user has submitted enquiry
+  // Listen for global enquiry form events
   useEffect(() => {
-    if (hasSubmittedEnquiry) return;
+    const handleShowEnquiryForm = () => {
+      setShowGlobalEnquiry(true);
+    };
+    window.addEventListener('showEnquiryForm', handleShowEnquiryForm);
+    return () => window.removeEventListener('showEnquiryForm', handleShowEnquiryForm);
+  }, []);
 
-    const showPopup = () => {
-      if (!showEnquiryModal && !showDetailsModal && !hasSubmittedEnquiry) {
-        setShowAutoPopup(true);
+  // Filter properties based on filters
+  const applyFilters = (property: any) => {
+    if (filters.location && !property.location.toLowerCase().includes(filters.location.toLowerCase())) {
+      return false;
+    }
+    if (filters.propertyType && property.type !== filters.propertyType) {
+      return false;
+    }
+    if (filters.bedrooms && property.bedrooms < parseInt(filters.bedrooms)) {
+      return false;
+    }
+    if (filters.bathrooms && property.bathrooms < parseInt(filters.bathrooms)) {
+      return false;
+    }
+    if (filters.priceMin || filters.priceMax) {
+      // Simple price filtering - you might want to implement more sophisticated price parsing
+      const priceStr = property.price.replace(/[^0-9]/g, '');
+      const price = parseInt(priceStr);
+      if (filters.priceMin && price < parseInt(filters.priceMin.replace(/[^0-9]/g, ''))) {
+        return false;
       }
-    };
-
-    // Show popup after 30 seconds initially, then every 30 seconds
-    const initialTimeout = setTimeout(showPopup, 30000); // 30 seconds
-    const interval = setInterval(showPopup, 30000); // Every 30 seconds
-
-    return () => {
-      clearTimeout(initialTimeout);
-      clearInterval(interval);
-    };
-  }, [hasSubmittedEnquiry, showEnquiryModal, showDetailsModal]);
+      if (filters.priceMax && price > parseInt(filters.priceMax.replace(/[^0-9]/g, ''))) {
+        return false;
+      }
+    }
+    if (filters.sqftMin && property.sqft < parseInt(filters.sqftMin)) {
+      return false;
+    }
+    if (filters.sqftMax && property.sqft > parseInt(filters.sqftMax)) {
+      return false;
+    }
+    if (filters.amenities && filters.amenities.length > 0) {
+      const hasRequiredAmenities = filters.amenities.some((amenity: string) =>
+        property.amenities.includes(amenity) || property.features.includes(amenity)
+      );
+      if (!hasRequiredAmenities) {
+        return false;
+      }
+    }
+    return true;
+  };
 
   const filteredProperties = properties.filter(property => {
-    const matchesLocation = !searchLocation || property.location.toLowerCase().includes(searchLocation.toLowerCase());
+    const matchesSearch = !searchLocation || property.location.toLowerCase().includes(searchLocation.toLowerCase());
     const matchesType = !propertyType || property.type === propertyType;
-    return matchesLocation && matchesType;
+    const matchesFilters = applyFilters(property);
+    return matchesSearch && matchesType && matchesFilters;
   });
 
   const handleEnquiry = (property: any) => {
@@ -89,7 +125,7 @@ const Index = () => {
 
   const handleFormSubmit = (formData: any) => {
     console.log("Form submitted:", formData);
-    localStorage.setItem('enquirySubmitted', 'true');
+    sessionStorage.setItem('enquiry_submitted', 'true');
     setHasSubmittedEnquiry(true);
     
     toast({
@@ -97,11 +133,8 @@ const Index = () => {
       description: "Our agent will contact you within 24 hours.",
     });
     
-    // Auto-close toast after 4 seconds
-    setTimeout(() => {
-      // This is handled by the toast component automatically
-    }, 4000);
     setShowEnquiryModal(false);
+    setShowGlobalEnquiry(false);
     setShowAutoPopup(false);
     setSelectedProperty(null);
     
@@ -150,20 +183,29 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
       <Header />
       
-      {/* Hero Carousel */}
-      <PropertyCarousel />
+      {/* Dynamic Hero Carousel */}
+      <DynamicHeroCarousel />
 
-      {/* Search Section */}
-      <section className="py-12 bg-gradient-to-r from-purple-100 to-blue-100">
+      {/* Session-based Enquiry Popup */}
+      <SessionBasedEnquiry />
+
+      {/* Advanced Property Filters */}
+      <section className="py-8 bg-gradient-to-r from-purple-100 to-blue-100">
+        <div className="container mx-auto px-4">
+          <PropertyFilters onFiltersChange={setFilters} />
+        </div>
+      </section>
+
+      {/* Quick Search Section */}
+      <section className="py-8 bg-white">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-bold text-center mb-8 text-gray-800">Find Your Perfect Property</h2>
-            <div className="flex flex-col md:flex-row gap-4 p-6 bg-white rounded-lg shadow-lg card-gradient">
+            <div className="flex flex-col md:flex-row gap-4 p-6 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg shadow-lg">
               <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
-                    placeholder="Search by location..."
+                    placeholder="Quick search by location..."
                     value={searchLocation}
                     onChange={(e) => setSearchLocation(e.target.value)}
                     className="pl-10"
@@ -171,24 +213,12 @@ const Index = () => {
                 </div>
               </div>
               <div className="flex-1">
-                <Select value={priceRange} onValueChange={setPriceRange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Price Range" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0-500k">$0 - $500K</SelectItem>
-                    <SelectItem value="500k-1m">$500K - $1M</SelectItem>
-                    <SelectItem value="1m-2m">$1M - $2M</SelectItem>
-                    <SelectItem value="2m+">$2M+</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex-1">
                 <Select value={propertyType} onValueChange={setPropertyType}>
                   <SelectTrigger>
                     <SelectValue placeholder="Property Type" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="">All Types</SelectItem>
                     <SelectItem value="Apartment">Apartment</SelectItem>
                     <SelectItem value="Villa">Villa</SelectItem>
                     <SelectItem value="Condo">Condo</SelectItem>
@@ -294,6 +324,20 @@ const Index = () => {
             property={selectedProperty}
             onSubmit={handleFormSubmit}
             onClose={handleCloseEnquiryModal}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Global Enquiry Modal */}
+      <Dialog open={showGlobalEnquiry} onOpenChange={setShowGlobalEnquiry}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Property Enquiry</DialogTitle>
+          </DialogHeader>
+          <EnquiryForm 
+            property={null}
+            onSubmit={handleFormSubmit}
+            onClose={() => setShowGlobalEnquiry(false)}
           />
         </DialogContent>
       </Dialog>
