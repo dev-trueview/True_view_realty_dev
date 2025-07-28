@@ -23,17 +23,17 @@ const Contact = () => {
     {
       icon: MapPin,
       title: "Office Address",
-      details: "123 Reality View Ave, TrueView Plaza, NY 10001"
+      details: "Level 2, Cyberpark, IT City Road, Indore (MP) - 452001"
     },
     {
       icon: Phone,
       title: "Phone Number",
-      details: "+1 (555) TRUE-VIEW"
+      details: "+91 9106-111-222"
     },
     {
       icon: Mail,
       title: "Email Address",
-      details: "info@trueviewreality.com"
+      details: "info@trueviewrealtyindia.com"
     },
     {
       icon: Clock,

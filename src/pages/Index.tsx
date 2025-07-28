@@ -227,7 +227,13 @@ const Index = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 px-8">
+              <Button 
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 px-8"
+                onClick={() => {
+                  // Trigger search/filter with current values
+                  setFilters(prev => ({ ...prev, location: searchLocation, propertyType }));
+                }}
+              >
                 Search
               </Button>
             </div>

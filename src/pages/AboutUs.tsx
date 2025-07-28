@@ -123,39 +123,6 @@ const AboutUs = () => {
         </div>
       </section>
 
-      {/* Team Section */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mb-4">
-              Meet Our Expert Team
-            </h2>
-            <p className="text-gray-300 max-w-2xl mx-auto">
-              Our diverse team of professionals brings together years of experience, 
-              cutting-edge expertise, and a passion for exceptional client service.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {teamMembers.map((member, index) => (
-              <Card key={index} className="bg-gradient-to-br from-slate-800/30 to-slate-900/30 backdrop-blur-sm border-cyan-500/20 hover:border-cyan-400/40 transition-all duration-300 transform hover:scale-105">
-                <CardContent className="p-6 text-center">
-                  <div className="w-24 h-24 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-full mx-auto mb-4 overflow-hidden shadow-lg shadow-cyan-500/25">
-                    <img
-                      src={member.image}
-                      alt={member.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="text-xl font-semibold text-white mb-1">{member.name}</h3>
-                  <p className="text-cyan-400 text-sm mb-3">{member.role}</p>
-                  <p className="text-gray-300 text-sm leading-relaxed">{member.bio}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* Why Choose Us Section */}
       <section className="py-16 bg-gradient-to-r from-cyan-500/5 via-purple-500/5 to-pink-500/5">

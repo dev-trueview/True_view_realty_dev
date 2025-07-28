@@ -95,15 +95,15 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Phone className="w-5 h-5 text-cyan-400" />
-                <span className="text-gray-300"> 7721873487 </span>
+                <span className="text-gray-300">+91 9106-111-222</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="w-5 h-5 text-cyan-400" />
-                <span className="text-gray-300">TrueViewrealty.in@gmail.com</span>
+                <span className="text-gray-300">info@trueviewrealtyindia.com</span>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin className="w-5 h-5 text-cyan-400" />
-                <span className="text-gray-300">TrueView Reality pune</span>
+                <span className="text-gray-300">Level 2, Cyberpark, IT City Road, Indore (MP) - 452001</span>
               </div>
             </div>
           </div>
