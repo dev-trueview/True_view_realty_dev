@@ -13,6 +13,7 @@ import Footer from '@/components/Footer';
 import AddPropertyForm from '@/components/AddPropertyForm';
 import HeroSliderManager from '@/components/HeroSliderManager';
 import AdminLogin from '@/components/AdminLogin';
+import CreateAdminUser from '@/components/CreateAdminUser';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { LogOut, Home, Building, Users, Database, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -237,7 +238,7 @@ const AdminDashboard = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-slate-800/50">
+          <TabsList className="grid w-full grid-cols-5 bg-slate-800/50">
             <TabsTrigger value="overview" className="text-white">
               <Building className="w-4 h-4 mr-2" />
               Overview
@@ -253,6 +254,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="add-property" className="text-white">
               <Plus className="w-4 h-4 mr-2" />
               Add Property
+            </TabsTrigger>
+            <TabsTrigger value="create-admin" className="text-white">
+              <Users className="w-4 h-4 mr-2" />
+              Create Admin
             </TabsTrigger>
           </TabsList>
 
@@ -431,6 +436,10 @@ const AdminDashboard = () => {
               onSuccess={handlePropertyAdded}
               onCancel={() => setActiveTab('overview')}
             />
+          </TabsContent>
+
+          <TabsContent value="create-admin">
+            <CreateAdminUser />
           </TabsContent>
         </Tabs>
       </div>

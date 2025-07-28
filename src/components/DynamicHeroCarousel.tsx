@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 interface HeroSlide {
   id: string;
@@ -15,6 +16,7 @@ const DynamicHeroCarousel = () => {
   const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchSlides();
@@ -125,13 +127,15 @@ const DynamicHeroCarousel = () => {
                   <Button 
                     size="lg" 
                     className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white border-0 shadow-lg shadow-cyan-500/25 px-8 py-6 text-lg"
+                    onClick={() => navigate('/active-listings')}
                   >
                     Explore Properties
                   </Button>
                   <Button 
                     size="lg" 
                     variant="outline" 
-                    className="border-2 border-white text-white hover:bg-white hover:text-black px-8 py-6 text-lg"
+                    className="border-2 border-white text-black bg-white hover:bg-gray-100 px-8 py-6 text-lg"
+                    onClick={() => navigate('/contact')}
                   >
                     Contact Us
                   </Button>
