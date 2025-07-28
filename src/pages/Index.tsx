@@ -57,13 +57,13 @@ const Index = () => {
     if (filters.location && !property.location.toLowerCase().includes(filters.location.toLowerCase())) {
       return false;
     }
-    if (filters.propertyType && property.type !== filters.propertyType) {
+    if (filters.propertyType && filters.propertyType !== 'all' && property.type !== filters.propertyType) {
       return false;
     }
-    if (filters.bedrooms && property.bedrooms < parseInt(filters.bedrooms)) {
+    if (filters.bedrooms && filters.bedrooms !== 'any' && property.bedrooms < parseInt(filters.bedrooms)) {
       return false;
     }
-    if (filters.bathrooms && property.bathrooms < parseInt(filters.bathrooms)) {
+    if (filters.bathrooms && filters.bathrooms !== 'any' && property.bathrooms < parseInt(filters.bathrooms)) {
       return false;
     }
     if (filters.priceMin || filters.priceMax) {
@@ -96,7 +96,7 @@ const Index = () => {
 
   const filteredProperties = properties.filter(property => {
     const matchesSearch = !searchLocation || property.location.toLowerCase().includes(searchLocation.toLowerCase());
-    const matchesType = !propertyType || property.type === propertyType;
+    const matchesType = !propertyType || propertyType === 'all' || property.type === propertyType;
     const matchesFilters = applyFilters(property);
     return matchesSearch && matchesType && matchesFilters;
   });
@@ -218,7 +218,7 @@ const Index = () => {
                     <SelectValue placeholder="Property Type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Types</SelectItem>
+                    <SelectItem value="all">All Types</SelectItem>
                     <SelectItem value="Apartment">Apartment</SelectItem>
                     <SelectItem value="Villa">Villa</SelectItem>
                     <SelectItem value="Condo">Condo</SelectItem>

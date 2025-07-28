@@ -28,9 +28,9 @@ const PropertyFilters = ({ onFiltersChange, className = '' }: PropertyFiltersPro
     location: '',
     priceMin: '',
     priceMax: '',
-    propertyType: '',
-    bedrooms: '',
-    bathrooms: '',
+    propertyType: 'all',
+    bedrooms: 'any',
+    bathrooms: 'any',
     sqftMin: '',
     sqftMax: '',
     amenities: []
@@ -63,9 +63,9 @@ const PropertyFilters = ({ onFiltersChange, className = '' }: PropertyFiltersPro
       location: '',
       priceMin: '',
       priceMax: '',
-      propertyType: '',
-      bedrooms: '',
-      bathrooms: '',
+      propertyType: 'all',
+      bedrooms: 'any',
+      bathrooms: 'any',
       sqftMin: '',
       sqftMax: '',
       amenities: []
@@ -74,9 +74,15 @@ const PropertyFilters = ({ onFiltersChange, className = '' }: PropertyFiltersPro
     onFiltersChange(emptyFilters);
   };
 
-  const hasActiveFilters = Object.values(filters).some(value => 
-    Array.isArray(value) ? value.length > 0 : value !== ''
-  );
+  const hasActiveFilters = filters.location !== '' || 
+    filters.priceMin !== '' || 
+    filters.priceMax !== '' || 
+    (filters.propertyType !== 'all' && filters.propertyType !== '') ||
+    (filters.bedrooms !== 'any' && filters.bedrooms !== '') ||
+    (filters.bathrooms !== 'any' && filters.bathrooms !== '') ||
+    filters.sqftMin !== '' || 
+    filters.sqftMax !== '' ||
+    filters.amenities.length > 0;
 
   return (
     <Card className={`bg-white shadow-lg ${className}`}>
@@ -98,7 +104,7 @@ const PropertyFilters = ({ onFiltersChange, className = '' }: PropertyFiltersPro
               <SelectValue placeholder="Property Type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Types</SelectItem>
+              <SelectItem value="all">All Types</SelectItem>
               <SelectItem value="Apartment">Apartment</SelectItem>
               <SelectItem value="Villa">Villa</SelectItem>
               <SelectItem value="Condo">Condo</SelectItem>
@@ -150,7 +156,7 @@ const PropertyFilters = ({ onFiltersChange, className = '' }: PropertyFiltersPro
                   <SelectValue placeholder="Bedrooms" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any</SelectItem>
+                  <SelectItem value="any">Any</SelectItem>
                   <SelectItem value="1">1+ Bed</SelectItem>
                   <SelectItem value="2">2+ Beds</SelectItem>
                   <SelectItem value="3">3+ Beds</SelectItem>
@@ -164,7 +170,7 @@ const PropertyFilters = ({ onFiltersChange, className = '' }: PropertyFiltersPro
                   <SelectValue placeholder="Bathrooms" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any</SelectItem>
+                  <SelectItem value="any">Any</SelectItem>
                   <SelectItem value="1">1+ Bath</SelectItem>
                   <SelectItem value="2">2+ Baths</SelectItem>
                   <SelectItem value="3">3+ Baths</SelectItem>
@@ -213,11 +219,11 @@ const PropertyFilters = ({ onFiltersChange, className = '' }: PropertyFiltersPro
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <span>Active filters:</span>
               {filters.location && <Badge variant="secondary">{filters.location}</Badge>}
-              {filters.propertyType && <Badge variant="secondary">{filters.propertyType}</Badge>}
+              {filters.propertyType && filters.propertyType !== 'all' && <Badge variant="secondary">{filters.propertyType}</Badge>}
               {filters.priceMin && <Badge variant="secondary">Min: {filters.priceMin}</Badge>}
               {filters.priceMax && <Badge variant="secondary">Max: {filters.priceMax}</Badge>}
-              {filters.bedrooms && <Badge variant="secondary">{filters.bedrooms}+ Beds</Badge>}
-              {filters.bathrooms && <Badge variant="secondary">{filters.bathrooms}+ Baths</Badge>}
+              {filters.bedrooms && filters.bedrooms !== 'any' && <Badge variant="secondary">{filters.bedrooms}+ Beds</Badge>}
+              {filters.bathrooms && filters.bathrooms !== 'any' && <Badge variant="secondary">{filters.bathrooms}+ Baths</Badge>}
               {filters.amenities.map(amenity => (
                 <Badge key={amenity} variant="secondary">{amenity}</Badge>
               ))}
