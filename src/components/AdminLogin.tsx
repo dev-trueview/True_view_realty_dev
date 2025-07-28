@@ -19,7 +19,7 @@ const AdminLogin = ({ showTrigger = true, onSuccess }: AdminLoginProps) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSignup, setIsSignup] = useState(false);
+  
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -28,40 +28,7 @@ const AdminLogin = ({ showTrigger = true, onSuccess }: AdminLoginProps) => {
     setIsLoading(true);
 
     try {
-      if (isSignup) {
-        // Sign up new admin user
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/admin-dashboard`
-          }
-        });
-
-        if (error) {
-          throw error;
-        }
-
-        if (data.user) {
-          // Promote user to admin using our database function
-          const { error: promoteError } = await supabase.rpc('promote_user_to_admin', {
-            user_email: email
-          });
-
-          if (promoteError) {
-            console.error('Error promoting user to admin:', promoteError);
-          }
-
-          toast({
-            title: "Account Created",
-            description: "Admin account created successfully. You can now log in.",
-          });
-          
-          setIsSignup(false);
-          setEmail('');
-          setPassword('');
-        }
-      } else {
+      {
         // Sign in with Supabase
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
@@ -104,8 +71,8 @@ const AdminLogin = ({ showTrigger = true, onSuccess }: AdminLoginProps) => {
     } catch (error: any) {
       console.error('Auth error:', error);
       toast({
-        title: isSignup ? "Signup Failed" : "Login Failed",
-        description: error.message || (isSignup ? "Failed to create account" : "Invalid email or password"),
+        title: "Login Failed",
+        description: error.message || "Invalid email or password",
         variant: "destructive",
       });
     } finally {
@@ -118,7 +85,7 @@ const AdminLogin = ({ showTrigger = true, onSuccess }: AdminLoginProps) => {
     setEmail('');
     setPassword('');
     setShowPassword(false);
-    setIsSignup(false);
+    
   };
 
   return (
@@ -136,7 +103,7 @@ const AdminLogin = ({ showTrigger = true, onSuccess }: AdminLoginProps) => {
       <DialogContent className="sm:max-w-md bg-gradient-to-br from-slate-900 to-slate-800 border-gray-700 shadow-2xl" onInteractOutside={handleClose}>
         <DialogHeader>
           <DialogTitle className="text-cyan-400 text-center text-xl font-bold">
-            {isSignup ? 'Create Admin Account' : 'Admin Access'}
+            Admin Access
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -179,23 +146,13 @@ const AdminLogin = ({ showTrigger = true, onSuccess }: AdminLoginProps) => {
             {isLoading ? (
               <div className="flex items-center justify-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                {isSignup ? 'Creating Account...' : 'Logging in...'}
+                Logging in...
               </div>
             ) : (
-              isSignup ? 'Create Account' : 'Login'
+              'Login'
             )}
           </Button>
           
-          <div className="text-center">
-            <Button
-              type="button"
-              variant="link"
-              className="text-cyan-400 hover:text-cyan-300 text-sm"
-              onClick={() => setIsSignup(!isSignup)}
-            >
-              {isSignup ? 'Already have an account? Login' : 'Need an admin account? Sign up'}
-            </Button>
-          </div>
         </form>
       </DialogContent>
     </Dialog>

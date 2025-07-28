@@ -38,7 +38,13 @@ const PropertyCard = ({ property, onEnquiry, onViewDetails }: PropertyCardProps)
     if (imageError) {
       return '/placeholder.svg';
     }
-    return property.image || '/placeholder.svg';
+    
+    // Check for image URL from property_images table or fallback to legacy image field
+    if (property.image && property.image.startsWith('http')) {
+      return property.image;
+    }
+    
+    return '/placeholder.svg';
   };
 
   return (
