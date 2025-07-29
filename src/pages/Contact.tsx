@@ -23,17 +23,17 @@ const Contact = () => {
     {
       icon: MapPin,
       title: "Office Address",
-      details: "Level 2, Cyberpark, IT City Road, Indore (MP) - 452001"
+      details: "Trueviewrealty office, Pune, Maharashtra"
     },
     {
       icon: Phone,
       title: "Phone Number",
-      details: "+91 9106-111-222"
+      details: "+91 7620658446"
     },
     {
       icon: Mail,
       title: "Email Address",
-      details: "info@trueviewrealtyindia.com"
+      details: "trueviewrealty.in@gmail.com"
     },
     {
       icon: Clock,
@@ -183,14 +183,6 @@ const Contact = () => {
                 <CardContent className="p-6">
                   <h3 className="text-xl font-semibold text-white mb-4">Why Choose TrueView Reality?</h3>
                   <ul className="space-y-3 text-gray-300">
-                    <li className="flex items-start">
-                      <span className="w-2 h-2 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                      Advanced property analysis with AI-powered insights
-                    </li>
-                    <li className="flex items-start">
-                      <span className="w-2 h-2 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                      Virtual reality property tours and 3D walkthroughs
-                    </li>
                     <li className="flex items-start">
                       <span className="w-2 h-2 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
                       Exclusive access to premium property listings

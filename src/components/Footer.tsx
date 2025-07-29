@@ -70,10 +70,16 @@ const Footer = () => {
               Experience the future of real estate with cutting-edge technology and personalized service that makes property dreams come true.
             </p>
             <div className="flex space-x-4">
-              <Facebook className="w-5 h-5 text-gray-400 hover:text-cyan-400 cursor-pointer transition-colors" />
+              <a href="https://www.facebook.com/share/1B5m6QNGYX/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer">
+                <Facebook className="w-5 h-5 text-gray-400 hover:text-cyan-400 cursor-pointer transition-colors" />
+              </a>
               <Twitter className="w-5 h-5 text-gray-400 hover:text-cyan-400 cursor-pointer transition-colors" />
-              <Instagram className="w-5 h-5 text-gray-400 hover:text-cyan-400 cursor-pointer transition-colors" />
-              <Linkedin className="w-5 h-5 text-gray-400 hover:text-cyan-400 cursor-pointer transition-colors" />
+              <a href="https://www.instagram.com/true.viewrealty/" target="_blank" rel="noopener noreferrer">
+                <Instagram className="w-5 h-5 text-gray-400 hover:text-cyan-400 cursor-pointer transition-colors" />
+              </a>
+              <a href="https://l.instagram.com/?u=https%3A%2F%2Fwww.youtube.com%2F%40TrueviewRealty&e=AT3uA1nzgMJotRIMUbNtSp8rn-CsMMLNKIIYRE1Y8xoVJM4hUu-LTJX3Ix56TasFdm4FEJQAaH01t8ioQuk6fgkZJ-__fesTav5Nma6f2BAhLs17" target="_blank" rel="noopener noreferrer">
+                <Linkedin className="w-5 h-5 text-gray-400 hover:text-cyan-400 cursor-pointer transition-colors" />
+              </a>
             </div>
           </div>
 
@@ -95,15 +101,15 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Phone className="w-5 h-5 text-cyan-400" />
-                <span className="text-gray-300">+91 9106-111-222</span>
+                <span className="text-gray-300">+91 7620658446</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="w-5 h-5 text-cyan-400" />
-                <span className="text-gray-300">info@trueviewrealtyindia.com</span>
+                <span className="text-gray-300">trueviewrealty.in@gmail.com</span>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin className="w-5 h-5 text-cyan-400" />
-                <span className="text-gray-300">Level 2, Cyberpark, IT City Road, Indore (MP) - 452001</span>
+                <span className="text-gray-300">Trueviewrealty office, Pune, Maharashtra</span>
               </div>
             </div>
           </div>

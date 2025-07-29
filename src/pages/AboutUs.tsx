@@ -6,9 +6,9 @@ import Footer from "@/components/Footer";
 
 const AboutUs = () => {
   const stats = [
-    { icon: Home, label: "Properties Sold", value: "2,500+" },
-    { icon: Users, label: "Happy Clients", value: "5,000+" },
-    { icon: Award, label: "Years Experience", value: "15+" },
+    { icon: Home, label: "Properties Sold", value: "100+" },
+    { icon: Users, label: "Happy Clients", value: "200+" },
+    { icon: Award, label: "Years Experience", value: "5+" },
     { icon: TrendingUp, label: "Success Rate", value: "98%" },
   ];
 
@@ -136,24 +136,8 @@ const AboutUs = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
-                title: "AI-Powered Analytics",
-                description: "Advanced algorithms provide deep market insights and property valuations."
-              },
-              {
-                title: "Virtual Reality Tours",
-                description: "Immersive VR experiences let you explore properties from anywhere."
-              },
-              {
                 title: "24/7 Support",
                 description: "Round-the-clock assistance with dedicated client success managers."
-              },
-              {
-                title: "Blockchain Security",
-                description: "Secure, transparent transactions with cutting-edge blockchain technology."
-              },
-              {
-                title: "Smart Matching",
-                description: "Our AI matches you with properties that perfectly fit your criteria."
               },
               {
                 title: "Future-Ready",
