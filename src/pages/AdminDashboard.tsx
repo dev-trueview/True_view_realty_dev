@@ -12,6 +12,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import AddPropertyForm from '@/components/AddPropertyForm';
 import HeroSliderManager from '@/components/HeroSliderManager';
+import PropertyManagement from '@/components/PropertyManagement';
 import AdminLogin from '@/components/AdminLogin';
 import CreateAdminUser from '@/components/CreateAdminUser';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -238,10 +239,14 @@ const AdminDashboard = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-slate-800/50">
+          <TabsList className="grid w-full grid-cols-6 bg-slate-800/50">
             <TabsTrigger value="overview" className="text-white">
               <Building className="w-4 h-4 mr-2" />
               Overview
+            </TabsTrigger>
+            <TabsTrigger value="properties" className="text-white">
+              <Building className="w-4 h-4 mr-2" />
+              Properties
             </TabsTrigger>
             <TabsTrigger value="subscribers" className="text-white">
               <Users className="w-4 h-4 mr-2" />
@@ -425,6 +430,10 @@ const AdminDashboard = () => {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="properties">
+            <PropertyManagement />
           </TabsContent>
 
           <TabsContent value="hero-management">

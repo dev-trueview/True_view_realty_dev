@@ -285,6 +285,85 @@ export const databaseAPI = {
     }
   },
 
+  // Update property (admin)
+  async updateProperty(propertyId: string, propertyData: Partial<NewPropertyData>): Promise<boolean> {
+    try {
+      console.log('Updating property in Supabase:', propertyId, propertyData);
+      
+      const updateData: any = {};
+      Object.keys(propertyData).forEach(key => {
+        if (propertyData[key as keyof NewPropertyData] !== undefined) {
+          updateData[key] = propertyData[key as keyof NewPropertyData];
+        }
+      });
+
+      const { error } = await supabase
+        .from('properties')
+        .update(updateData)
+        .eq('id', propertyId);
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Property updated successfully');
+      return true;
+    } catch (error) {
+      console.error('Error updating property:', error);
+      return false;
+    }
+  },
+
+  // Delete property (admin)
+  async deleteProperty(propertyId: string): Promise<boolean> {
+    try {
+      console.log('Deleting property from Supabase:', propertyId);
+      
+      // First, delete related property images from storage
+      const { data: property } = await supabase
+        .from('properties')
+        .select('images')
+        .eq('id', propertyId)
+        .single();
+
+      if (property?.images && Array.isArray(property.images)) {
+        for (const imageUrl of property.images) {
+          try {
+            // Extract file path from URL
+            if (typeof imageUrl === 'string') {
+              const path = imageUrl.split('/').pop();
+              if (path) {
+                await supabase.storage
+                  .from('property-images')
+                  .remove([`properties/${path}`]);
+              }
+            }
+          } catch (imageError) {
+            console.warn('Could not delete image:', imageError);
+          }
+        }
+      }
+
+      // Delete the property record
+      const { error } = await supabase
+        .from('properties')
+        .delete()
+        .eq('id', propertyId);
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Property deleted successfully');
+      return true;
+    } catch (error) {
+      console.error('Error deleting property:', error);
+      return false;
+    }
+  },
+
   // Fetch newsletter subscriptions (admin)
   async fetchNewsletterSubscriptions(): Promise<any[]> {
     try {
