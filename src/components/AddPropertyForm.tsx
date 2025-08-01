@@ -105,21 +105,42 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
         return;
       }
 
+      // Upload images first
+      const uploadedImageUrls: string[] = [];
+      for (const image of images) {
+        const imageUrl = await databaseAPI.uploadImage(image, 'properties');
+        if (imageUrl) {
+          uploadedImageUrls.push(imageUrl);
+        }
+      }
+
+      if (uploadedImageUrls.length === 0) {
+        toast({
+          title: "Image upload failed",
+          description: "Failed to upload property images. Please try again.",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+
       const filteredFeatures = features.filter(f => f.trim() !== '');
       const propertyData = {
         ...formData,
-        features: filteredFeatures
+        features: filteredFeatures,
+        image: uploadedImageUrls[0], // Primary image
+        images: uploadedImageUrls // All images
       };
 
       console.log('Submitting property data:', propertyData);
-      console.log('Images to upload:', images.length);
+      console.log('Images uploaded:', uploadedImageUrls.length);
 
       const result = await databaseAPI.addProperty(propertyData);
 
       if (result) {
         toast({
           title: "Property Added Successfully",
-          description: "The new property listing has been created",
+          description: "The new property listing has been created with images",
         });
         
         // Reset form

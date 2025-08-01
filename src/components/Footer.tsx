@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Home, Phone, Mail, MapPin, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
+import { Home, Phone, Mail, MapPin, Facebook, Twitter, Instagram, Youtube } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -78,7 +78,7 @@ const Footer = () => {
                 <Instagram className="w-5 h-5 text-gray-400 hover:text-cyan-400 cursor-pointer transition-colors" />
               </a>
               <a href="https://l.instagram.com/?u=https%3A%2F%2Fwww.youtube.com%2F%40TrueviewRealty&e=AT3uA1nzgMJotRIMUbNtSp8rn-CsMMLNKIIYRE1Y8xoVJM4hUu-LTJX3Ix56TasFdm4FEJQAaH01t8ioQuk6fgkZJ-__fesTav5Nma6f2BAhLs17" target="_blank" rel="noopener noreferrer">
-                <Linkedin className="w-5 h-5 text-gray-400 hover:text-cyan-400 cursor-pointer transition-colors" />
+                <Youtube className="w-5 h-5 text-gray-400 hover:text-cyan-400 cursor-pointer transition-colors" />
               </a>
             </div>
           </div>
