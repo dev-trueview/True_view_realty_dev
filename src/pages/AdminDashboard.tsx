@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +12,6 @@ import Footer from '@/components/Footer';
 import AddPropertyForm from '@/components/AddPropertyForm';
 import HeroSliderManager from '@/components/HeroSliderManager';
 import PropertyManagement from '@/components/PropertyManagement';
-import AdminLogin from '@/components/AdminLogin';
 import CreateAdminUser from '@/components/CreateAdminUser';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { LogOut, Home, Building, Users, Database, Plus } from 'lucide-react';
@@ -37,84 +35,26 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [user, setUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session?.user) {
-          setUser(session.user);
-          
-          // Check if user has admin role
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('user_id', session.user.id)
-            .single();
-          
-          if (profile && ['admin', 'super_admin'].includes(profile.role)) {
-            setIsAdmin(true);
-            fetchAnalyticsData();
-          } else {
-            setIsAdmin(false);
-            toast({
-              title: "Access Denied",
-              description: "Admin privileges required",
-              variant: "destructive",
-            });
-            navigate('/');
-          }
-        } else {
-          setUser(null);
-          setIsAdmin(false);
-          toast({
-            title: "Access Denied",
-            description: "Please log in to access the admin dashboard",
-            variant: "destructive",
-          });
-          navigate('/');
-        }
+    // Get current user and fetch data immediately since we're protected by ProtectedRoute
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUser(user);
+        await fetchAnalyticsData();
       }
-    );
+    };
 
-    // Check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-        
-        // Check admin role for current user
-        supabase
-          .from('profiles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .single()
-          .then(({ data: profile }) => {
-            if (profile && ['admin', 'super_admin'].includes(profile.role)) {
-              setIsAdmin(true);
-              fetchAnalyticsData();
-            } else {
-              setIsAdmin(false);
-              toast({
-                title: "Access Denied",
-                description: "Admin privileges required",
-                variant: "destructive",
-              });
-              navigate('/');
-            }
-          });
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate, toast]);
+    getCurrentUser();
+  }, []);
 
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true);
       console.log('Fetching analytics data...');
       
-      // Fetch data from Supabase
+      // Optimized parallel data fetching
       const [properties, enquiries, subscriptions] = await Promise.all([
         databaseAPI.fetchAllProperties(),
         databaseAPI.fetchEnquiries(),
@@ -123,48 +63,73 @@ const AdminDashboard = () => {
 
       console.log('Properties fetched:', properties.length);
       console.log('Enquiries fetched:', enquiries.length);
+      console.log('Subscriptions fetched:', subscriptions.length);
 
-      // Process property data by type
+      // Process data for charts
       const propertyByType = properties.reduce((acc: any, property: any) => {
         const type = property.type || 'Unknown';
-        acc[type] = (acc[type] || 0) + 1;
+        const existing = acc.find((item: any) => item.name === type);
+        if (existing) {
+          existing.value += 1;
+        } else {
+          acc.push({ name: type, value: 1 });
+        }
         return acc;
-      }, {});
+      }, []);
 
-      // Process property data by location
       const propertyByLocation = properties.reduce((acc: any, property: any) => {
         const location = property.location || 'Unknown';
-        acc[location] = (acc[location] || 0) + 1;
+        const existing = acc.find((item: any) => item.name === location);
+        if (existing) {
+          existing.value += 1;
+        } else {
+          acc.push({ name: location, value: 1 });
+        }
         return acc;
-      }, {});
+      }, []);
 
       // Process enquiries by month
       const enquiriesByMonth = enquiries.reduce((acc: any, enquiry: any) => {
         const date = new Date(enquiry.created_at);
-        const month = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-        acc[month] = (acc[month] || 0) + 1;
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const existing = acc.find((item: any) => item.month === monthKey);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          acc.push({ month: monthKey, count: 1 });
+        }
         return acc;
-      }, {});
+      }, []).sort((a: any, b: any) => a.month.localeCompare(b.month));
 
-      const analyticsData: AnalyticsData = {
+      setAnalyticsData({
         totalProperties: properties.length,
         totalEnquiries: enquiries.length,
         totalSubscribers: subscriptions.length,
-        recentEnquiries: enquiries.slice(0, 10),
-        newsletterSubscriptions: subscriptions.slice(0, 20),
-        propertyByType: Object.entries(propertyByType).map(([name, value]) => ({ name, value: value as number })),
-        propertyByLocation: Object.entries(propertyByLocation).map(([name, value]) => ({ name, value: value as number })),
-        enquiriesByMonth: Object.entries(enquiriesByMonth).map(([month, count]) => ({ month, count: count as number }))
-      };
+        recentEnquiries: enquiries.slice(-10),
+        newsletterSubscriptions: subscriptions,
+        propertyByType,
+        propertyByLocation,
+        enquiriesByMonth
+      });
 
-      setAnalyticsData(analyticsData);
-      console.log('Analytics data processed successfully');
     } catch (error) {
-      console.error('Error fetching analytics data:', error);
+      console.error('Error fetching analytics:', error);
       toast({
-        title: "Error",
-        description: "Failed to load analytics data",
+        title: "Data Loading Error",
+        description: "Some analytics data may not be available. Please refresh the page.",
         variant: "destructive",
+      });
+      
+      // Set minimal data to prevent crashes
+      setAnalyticsData({
+        totalProperties: 0,
+        totalEnquiries: 0,
+        totalSubscribers: 0,
+        recentEnquiries: [],
+        newsletterSubscriptions: [],
+        propertyByType: [],
+        propertyByLocation: [],
+        enquiriesByMonth: []
       });
     } finally {
       setLoading(false);
@@ -172,14 +137,21 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setIsAdmin(false);
-    toast({
-      title: "Logged Out",
-      description: "You have been successfully logged out",
-    });
-    navigate('/');
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out",
+      });
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({
+        title: "Logout Error",
+        description: "There was an issue logging out. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePropertyAdded = () => {
@@ -187,35 +159,20 @@ const AdminDashboard = () => {
     setActiveTab('overview'); // Switch back to overview
     toast({
       title: "Success",
-      description: "Property added successfully",
+      description: "Property added successfully and analytics refreshed",
     });
   };
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
-  // Show login form if not authenticated or not admin
-  if (!user || !isAdmin) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-white mb-4">Admin Access Required</h1>
-          <AdminLogin showTrigger={true} />
-        </div>
-      </div>
-    );
-  }
-
+  // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900">
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-            <div className="text-white text-xl ml-4">Loading analytics...</div>
-          </div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto mb-4"></div>
+          <p className="text-gray-300 text-lg">Loading admin dashboard...</p>
         </div>
-        <Footer />
       </div>
     );
   }

@@ -9,6 +9,7 @@ import { Plus, X, Upload, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { databaseAPI, NewPropertyData } from '@/utils/database';
 import FormFieldWithTooltip from './FormFieldWithTooltip';
+import OptimizedImageUpload from './OptimizedImageUpload';
 
 interface AddPropertyFormProps {
   onSuccess?: () => void;
@@ -105,23 +106,49 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
         return;
       }
 
-      // Upload images first
+      if (images.length > 5) {
+        toast({
+          title: "Too many images",
+          description: "Maximum 5 images allowed per property",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Upload images with retry logic
       const uploadedImageUrls: string[] = [];
+      let uploadErrors = 0;
+      
       for (const image of images) {
-        const imageUrl = await databaseAPI.uploadImage(image, 'properties');
-        if (imageUrl) {
-          uploadedImageUrls.push(imageUrl);
+        try {
+          const imageUrl = await databaseAPI.uploadImage(image, 'properties');
+          if (imageUrl) {
+            uploadedImageUrls.push(imageUrl);
+          } else {
+            uploadErrors++;
+          }
+        } catch (error) {
+          console.error('Individual image upload failed:', error);
+          uploadErrors++;
         }
       }
 
       if (uploadedImageUrls.length === 0) {
         toast({
           title: "Image upload failed",
-          description: "Failed to upload property images. Please try again.",
+          description: "Failed to upload property images. Please check your internet connection and try again.",
           variant: "destructive"
         });
         setLoading(false);
         return;
+      }
+
+      if (uploadErrors > 0) {
+        toast({
+          title: "Some images failed to upload",
+          description: `${uploadedImageUrls.length} out of ${images.length} images uploaded successfully. Proceeding with available images.`,
+        });
       }
 
       const filteredFeatures = features.filter(f => f.trim() !== '');
@@ -140,7 +167,7 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
       if (result) {
         toast({
           title: "Property Added Successfully",
-          description: "The new property listing has been created with images",
+          description: `New property listing created with ${uploadedImageUrls.length} image(s)`,
         });
         
         // Reset form
@@ -168,17 +195,13 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
         
         if (onSuccess) onSuccess();
       } else {
-        toast({
-          title: "Error",
-          description: "Failed to add property",
-          variant: "destructive"
-        });
+        throw new Error('Property creation failed');
       }
     } catch (error) {
       console.error('Form submission error:', error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred while adding the property",
+        description: error instanceof Error ? error.message : "An unexpected error occurred while adding the property",
         variant: "destructive"
       });
     } finally {
@@ -506,53 +529,17 @@ const AddPropertyForm = ({ onSuccess, onCancel }: AddPropertyFormProps) => {
               </div>
             </FormFieldWithTooltip>
 
-            {/* Image Upload */}
+            {/* Optimized Image Upload */}
             <FormFieldWithTooltip
-              label="Property Images (Max 10)"
-              tooltip="Upload high-quality images of the property. Supported formats: JPG, PNG, WebP. Recommended size: 1920x1080 or higher. First image will be the main listing photo."
+              label="Property Images (Max 5)"
+              tooltip="Upload high-quality images of the property. Each image can be up to 5MB. Supported formats: JPEG, PNG, WebP. Images will be automatically optimized for better performance."
             >
-              <div className="mt-2">
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  id="image-upload"
-                />
-                <label
-                  htmlFor="image-upload"
-                  className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-cyan-400 transition-colors"
-                >
-                  <div className="text-center">
-                    <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                    <p className="text-gray-400">Click to upload images</p>
-                  </div>
-                </label>
-              </div>
-              
-              {images.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                  {images.map((image, index) => (
-                    <div key={index} className="relative">
-                      <img
-                        src={URL.createObjectURL(image)}
-                        alt={`Preview ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-lg"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => removeImage(index)}
-                        className="absolute -top-2 -right-2 w-6 h-6 border-red-400 text-red-400 hover:bg-red-400 hover:text-white"
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <OptimizedImageUpload 
+                images={images}
+                onImagesChange={setImages}
+                maxImages={5}
+                maxSizePerImage={5}
+              />
             </FormFieldWithTooltip>
 
             {/* Submit Buttons */}

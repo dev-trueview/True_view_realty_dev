@@ -6,7 +6,7 @@ import type {
 } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+const TOAST_REMOVE_DELAY = 5000
 
 type ToasterToast = ToastProps & {
   id: string
@@ -161,12 +161,11 @@ function toast({ ...props }: Toast) {
     },
   })
 
-  // Auto-dismiss after 4 seconds unless it's a destructive/error toast
-  if (props.variant !== "destructive") {
-    setTimeout(() => {
-      dismiss()
-    }, 4000)
-  }
+  // Auto-dismiss after 4 seconds for success toasts, 6 seconds for errors
+  const autoHideDelay = props.variant === "destructive" ? 6000 : 4000;
+  setTimeout(() => {
+    dismiss()
+  }, autoHideDelay)
 
   return {
     id: id,
