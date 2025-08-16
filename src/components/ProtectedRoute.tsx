@@ -19,7 +19,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
     const checkAuth = async () => {
       try {
-        // Get current session
+        // Get current session with better error handling
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
@@ -32,6 +32,8 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         }
 
         if (session?.user) {
+          console.log('Found existing session for user:', session.user.email);
+          
           // Check if user has admin role
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
@@ -40,17 +42,34 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
             .single();
 
           if (mounted) {
-            if (profileError || !profile || !['admin', 'super_admin'].includes(profile.role)) {
+            if (profileError) {
+              console.error('Profile fetch error:', profileError);
+              // If profile doesn't exist, still check if user is authenticated
+              if (profileError.code === 'PGRST116') {
+                // No rows returned - profile doesn't exist, treat as non-admin
+                setUser(null);
+                setIsAdmin(false);
+                setShowLoginModal(true);
+              } else {
+                // Other database error
+                setUser(session.user);
+                setIsAdmin(false);
+                setShowLoginModal(true);
+              }
+            } else if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
+              console.log('User does not have admin role:', profile?.role);
               setUser(null);
               setIsAdmin(false);
               setShowLoginModal(true);
             } else {
+              console.log('User authenticated with admin role:', profile.role);
               setUser(session.user);
               setIsAdmin(true);
               setShowLoginModal(false);
             }
           }
         } else {
+          console.log('No active session found');
           if (mounted) {
             setUser(null);
             setIsAdmin(false);
@@ -60,6 +79,8 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       } catch (error) {
         console.error('Auth check error:', error);
         if (mounted) {
+          setUser(null);
+          setIsAdmin(false);
           setShowLoginModal(true);
         }
       } finally {
@@ -69,25 +90,34 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       }
     };
 
-    // Set up auth state listener first
+    // Set up auth state listener with improved error handling
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
+        
+        console.log('Auth state changed:', event, session?.user?.email);
         
         if (event === 'SIGNED_OUT' || !session) {
           setUser(null);
           setIsAdmin(false);
           setShowLoginModal(true);
           setLoading(false);
-        } else if (session?.user) {
-          // Check admin role for signed in user
-          const { data: profile } = await supabase
+        } else if (event === 'SIGNED_IN' && session?.user) {
+          setLoading(true);
+          
+          // Check admin role for newly signed in user
+          const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('role')
             .eq('user_id', session.user.id)
             .single();
 
-          if (profile && ['admin', 'super_admin'].includes(profile.role)) {
+          if (profileError) {
+            console.error('Profile check error on sign in:', profileError);
+            setUser(null);
+            setIsAdmin(false);
+            setShowLoginModal(true);
+          } else if (profile && ['admin', 'super_admin'].includes(profile.role)) {
             setUser(session.user);
             setIsAdmin(true);
             setShowLoginModal(false);
@@ -97,22 +127,27 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
             setShowLoginModal(true);
           }
           setLoading(false);
+        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+          // Handle token refresh - maintain current state if already authenticated
+          if (isAdmin) {
+            setUser(session.user);
+          }
         }
       }
     );
 
-    // Then check for existing session
+    // Check for existing session on component mount
     checkAuth();
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [isAdmin]); // Include isAdmin in dependency array for token refresh handling
 
   const handleLoginSuccess = () => {
     setShowLoginModal(false);
-    // checkAuth will be triggered by onAuthStateChange
+    // Authentication state will be updated by onAuthStateChange
   };
 
   if (loading) {
@@ -120,7 +155,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto mb-4"></div>
-          <p className="text-gray-300">Loading...</p>
+          <p className="text-gray-300">Verifying authentication...</p>
         </div>
       </div>
     );
@@ -129,7 +164,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   if (!user || !isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto px-4">
           <h1 className="text-2xl font-bold text-white mb-4">Admin Access Required</h1>
           <p className="text-gray-300 mb-6">Please log in with your admin credentials to continue.</p>
           <AdminLogin showTrigger={false} onSuccess={handleLoginSuccess} />
