@@ -1,0 +1,6 @@
+# Handle client-side routing for SPA
+/*    /index.html   200
+
+# Admin routes specifically
+/admin/*    /index.html   200
+/admin-dashboard    /index.html   200

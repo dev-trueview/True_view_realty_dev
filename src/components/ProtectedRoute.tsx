@@ -19,14 +19,18 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
     const checkAuth = async () => {
       try {
+        setLoading(true);
+        
         // Get current session with better error handling
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
           console.error('Session error:', sessionError);
           if (mounted) {
-            setLoading(false);
+            setUser(null);
+            setIsAdmin(false);
             setShowLoginModal(true);
+            setLoading(false);
           }
           return;
         }
@@ -34,38 +38,49 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         if (session?.user) {
           console.log('Found existing session for user:', session.user.email);
           
-          // Check if user has admin role
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('user_id', session.user.id)
-            .single();
+          try {
+            // Check if user has admin role
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('user_id', session.user.id)
+              .single();
 
-          if (mounted) {
-            if (profileError) {
-              console.error('Profile fetch error:', profileError);
-              // If profile doesn't exist, still check if user is authenticated
-              if (profileError.code === 'PGRST116') {
-                // No rows returned - profile doesn't exist, treat as non-admin
-                setUser(null);
-                setIsAdmin(false);
-                setShowLoginModal(true);
-              } else {
-                // Other database error
+            if (mounted) {
+              if (profileError) {
+                console.error('Profile fetch error:', profileError);
+                // If profile doesn't exist, still check if user is authenticated
+                if (profileError.code === 'PGRST116') {
+                  // No rows returned - profile doesn't exist, treat as non-admin
+                  console.log('No admin profile found for user');
+                  setUser(null);
+                  setIsAdmin(false);
+                  setShowLoginModal(true);
+                } else {
+                  // Other database error - but user is authenticated
+                  console.log('Database error but user is authenticated');
+                  setUser(session.user);
+                  setIsAdmin(false);
+                  setShowLoginModal(true);
+                }
+              } else if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
+                console.log('User does not have admin role:', profile?.role);
                 setUser(session.user);
                 setIsAdmin(false);
                 setShowLoginModal(true);
+              } else {
+                console.log('User authenticated with admin role:', profile.role);
+                setUser(session.user);
+                setIsAdmin(true);
+                setShowLoginModal(false);
               }
-            } else if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-              console.log('User does not have admin role:', profile?.role);
-              setUser(null);
+            }
+          } catch (error) {
+            console.error('Error checking admin profile:', error);
+            if (mounted) {
+              setUser(session.user);
               setIsAdmin(false);
               setShowLoginModal(true);
-            } else {
-              console.log('User authenticated with admin role:', profile.role);
-              setUser(session.user);
-              setIsAdmin(true);
-              setShowLoginModal(false);
             }
           }
         } else {
