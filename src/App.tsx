@@ -1,26 +1,38 @@
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import ActiveListings from "./pages/ActiveListings";
 import AboutUs from "./pages/AboutUs";
 import Contact from "./pages/Contact";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
+import PropertyDetails from "./pages/PropertyDetails";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
+import GoogleTagManager from "./components/Analytics/GoogleTagManager";
+import MarketingPixels from "./components/Analytics/MarketingPixels";
+import ConsentManager from "./components/Consent/ConsentManager";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
       <ErrorBoundary>
+        {/* Global Marketing & Analytics Components */}
+        <GoogleTagManager 
+          gtmId="GTM-XXXXXXX" 
+          enableConsent={true}
+        />
+        <MarketingPixels 
+          enableConsent={true}
+        />
+        <ConsentManager />
+        
         <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
@@ -60,6 +72,8 @@ const App = () => (
         </Routes>
         </BrowserRouter>
       </ErrorBoundary>
+      <Toaster />
+      <Sonner />
     </TooltipProvider>
   </QueryClientProvider>
 );

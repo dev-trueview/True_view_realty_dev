@@ -1,8 +1,12 @@
 
+import { useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Award, Home, TrendingUp, Eye, Target, Heart } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SEOHead from "@/components/SEO/SEOHead";
+import StructuredData from "@/components/SEO/StructuredData";
+import { trackPageView } from "@/components/Analytics/GoogleTagManager";
 
 const AboutUs = () => {
   const stats = [
@@ -39,8 +43,22 @@ const AboutUs = () => {
     },
   ];
 
+  useEffect(() => {
+    trackPageView('/about', 'About Us - TrueView Reality');
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* SEO Head */}
+      <SEOHead 
+        title="About TrueView Reality - Expert Real Estate Services in Pune"
+        description="Learn about TrueView Reality's mission to revolutionize real estate in Pune with cutting-edge technology, expert guidance, and exceptional customer service."
+        keywords="about trueview reality, real estate expertise, pune property experts, real estate technology, property consultants"
+      />
+      
+      {/* Structured Data */}
+      <StructuredData type="AboutPage" />
+      
       <Header />
       
       {/* Hero Section */}

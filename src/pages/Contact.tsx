@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,6 +9,10 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SEOHead from "@/components/SEO/SEOHead";
+import StructuredData from "@/components/SEO/StructuredData";
+import { trackPageView, trackFormSubmit } from "@/components/Analytics/GoogleTagManager";
+import { trackLeadGeneration } from "@/components/Analytics/MarketingPixels";
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -18,6 +22,10 @@ const Contact = () => {
     message: ""
   });
   const { toast } = useToast();
+
+  useEffect(() => {
+    trackPageView('/contact', 'Contact Us - TrueView Reality');
+  }, []);
 
   const contactInfo = [
     {
@@ -59,6 +67,14 @@ const Contact = () => {
 
       if (error) throw error;
 
+      // Track form submission in analytics
+      trackFormSubmit('contact_form', { 
+        source: 'contact_page',
+        user_name: formData.name,
+        user_email: formData.email
+      });
+      trackLeadGeneration('contact_form');
+
       toast({
         title: "Message Sent Successfully!",
         description: "We'll get back to you within 24 hours.",
@@ -83,6 +99,16 @@ const Contact = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* SEO Head */}
+      <SEOHead 
+        title="Contact TrueView Reality - Get Expert Real Estate Consultation"
+        description="Contact TrueView Reality for expert real estate consultation in Pune. Reach out to our team for property inquiries, consultations, and personalized service."
+        keywords="contact trueview reality, real estate consultation pune, property inquiry, real estate experts contact"
+      />
+      
+      {/* Structured Data */}
+      <StructuredData type="ContactPage" />
+      
       <Header />
       
       {/* Hero Section */}

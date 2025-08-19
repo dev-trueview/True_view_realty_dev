@@ -13,11 +13,15 @@ import PropertyFilters from "@/components/PropertyFilters";
 import PropertyCard from "@/components/PropertyCard";
 import PropertyDetailsModal from "@/components/PropertyDetailsModal";
 import EnquiryForm from "@/components/EnquiryForm";
-import TestimonialsSection from "@/components/TestimonialsSection";
+import TestimonialsWithSchema from "@/components/Marketing/TestimonialsWithSchema";
 import WhyChooseUsSection from "@/components/WhyChooseUsSection";
 import Footer from "@/components/Footer";
+import SEOHead from "@/components/SEO/SEOHead";
+import StructuredData from "@/components/SEO/StructuredData";
 import { useProperties } from "@/hooks/useProperties";
 import { databaseAPI } from "@/utils/database";
+import { trackPageView, trackPropertyView, trackEnquiry } from "@/components/Analytics/GoogleTagManager";
+import { trackPropertyInterest, trackLeadGeneration } from "@/components/Analytics/MarketingPixels";
 
 const Index = () => {
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
@@ -41,6 +45,9 @@ const Index = () => {
     if (enquirySubmitted === 'true') {
       setHasSubmittedEnquiry(true);
     }
+    
+    // Track page view for analytics
+    trackPageView('/', 'TrueView Reality - Premium Real Estate Properties in Pune');
   }, []);
 
   // Listen for global enquiry form events
@@ -117,9 +124,11 @@ const Index = () => {
     setSelectedProperty(property);
     setShowDetailsModal(true);
     
-    // Track property view
+    // Track property view in database and analytics
     if (property.id) {
       await databaseAPI.trackPropertyView(property.id);
+      trackPropertyView(property.id, property);
+      trackPropertyInterest(property);
     }
   };
 
@@ -127,6 +136,11 @@ const Index = () => {
     console.log("Form submitted:", formData);
     sessionStorage.setItem('enquiry_submitted', 'true');
     setHasSubmittedEnquiry(true);
+    
+    // Track enquiry in analytics
+    const source = selectedProperty ? 'property_inquiry' : 'general_inquiry';
+    trackEnquiry(source, selectedProperty?.id);
+    trackLeadGeneration(source, selectedProperty?.id);
     
     toast({
       title: "Enquiry Submitted Successfully!",
@@ -181,6 +195,17 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
+      {/* SEO Head */}
+      <SEOHead 
+        title="TrueView Reality - Premium Real Estate Properties in Pune"
+        description="Discover luxury properties in Pune with TrueView Reality. Expert real estate services, premium residential and commercial properties, and personalized property consultation."
+        keywords="real estate pune, luxury properties, residential properties, commercial real estate, property consultant, trueview reality"
+        ogImage="/favicon.png"
+      />
+      
+      {/* Structured Data */}
+      <StructuredData type="RealEstateAgent" />
+      
       <Header />
       
       {/* Dynamic Hero Carousel */}
@@ -274,8 +299,8 @@ const Index = () => {
       {/* Why Choose Us */}
       <WhyChooseUsSection />
 
-      {/* Testimonials */}
-      <TestimonialsSection />
+      {/* Testimonials with Schema */}
+      <TestimonialsWithSchema />
 
       {/* Footer */}
       <Footer />

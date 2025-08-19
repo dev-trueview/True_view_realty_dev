@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,7 +11,11 @@ import PropertyCard from "@/components/PropertyCard";
 import PropertyDetailsModal from "@/components/PropertyDetailsModal";
 import EnquiryForm from "@/components/EnquiryForm";
 import Footer from "@/components/Footer";
+import SEOHead from "@/components/SEO/SEOHead";
+import StructuredData from "@/components/SEO/StructuredData";
 import { useProperties } from "@/hooks/useProperties";
+import { trackPageView, trackPropertyView, trackEnquiry } from "@/components/Analytics/GoogleTagManager";
+import { trackPropertyInterest, trackLeadGeneration } from "@/components/Analytics/MarketingPixels";
 
 const ActiveListings = () => {
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
@@ -23,6 +27,10 @@ const ActiveListings = () => {
 
   // Use the same hook as Index page for consistency
   const { properties, loading, error } = useProperties();
+
+  useEffect(() => {
+    trackPageView('/active-listings', 'Active Property Listings - TrueView Reality');
+  }, []);
 
   const filteredProperties = properties.filter(property => {
     const matchesLocation = !searchLocation || property.location.toLowerCase().includes(searchLocation.toLowerCase());
@@ -38,11 +46,22 @@ const ActiveListings = () => {
   const handleViewDetails = (property: any) => {
     setSelectedProperty(property);
     setShowDetailsModal(true);
+    
+    // Track property view in analytics
+    if (property.id) {
+      trackPropertyView(property.id, property);
+      trackPropertyInterest(property);
+    }
   };
 
   const handleFormSubmit = (formData: any) => {
     console.log("Property enquiry submitted:", formData);
     localStorage.setItem('enquirySubmitted', 'true');
+    
+    // Track enquiry in analytics
+    const source = 'active_listings_inquiry';
+    trackEnquiry(source, selectedProperty?.id);
+    trackLeadGeneration(source, selectedProperty?.id);
     
     toast({
       title: "Enquiry Submitted Successfully!",
@@ -68,6 +87,16 @@ const ActiveListings = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* SEO Head */}
+      <SEOHead 
+        title="Active Property Listings - Premium Properties in Pune | TrueView Reality"
+        description="Browse active property listings in Pune. Discover luxury apartments, villas, and commercial properties with TrueView Reality's curated collection."
+        keywords="active property listings pune, luxury properties for sale, apartments villas pune, commercial real estate listings"
+      />
+      
+      {/* Structured Data */}
+      <StructuredData type="PropertyListing" />
+      
       <Header />
       
       {/* Hero Section */}

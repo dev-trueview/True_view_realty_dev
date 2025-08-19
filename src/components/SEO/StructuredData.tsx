@@ -1,3 +1,6 @@
+import React from 'react';
+import { Helmet } from 'react-helmet-async';
+
 export const generateOrganizationSchema = () => ({
   "@context": "https://schema.org",
   "@type": "RealEstateAgent",
@@ -141,3 +144,71 @@ export const generateLocalBusinessSchema = () => ({
   "image": "https://trueviewreality.com/favicon.png",
   "logo": "https://trueviewreality.com/favicon.png"
 });
+
+interface StructuredDataProps {
+  type: 'RealEstateAgent' | 'AboutPage' | 'ContactPage' | 'PropertyListing';
+  data?: any;
+  breadcrumbs?: Array<{name: string; url: string}>;
+  faqs?: Array<{question: string; answer: string}>;
+}
+
+const StructuredData: React.FC<StructuredDataProps> = ({ 
+  type, 
+  data, 
+  breadcrumbs = [], 
+  faqs = [] 
+}) => {
+  const getSchemas = () => {
+    const schemas = [];
+
+    // Always include organization schema
+    schemas.push(generateOrganizationSchema());
+
+    // Add local business schema
+    schemas.push(generateLocalBusinessSchema());
+
+    // Add type-specific schemas
+    switch (type) {
+      case 'RealEstateAgent':
+        // Already included above
+        break;
+      case 'PropertyListing':
+        if (data) {
+          schemas.push(generatePropertySchema(data));
+        }
+        break;
+      case 'AboutPage':
+      case 'ContactPage':
+        // Use organization schema which is already included
+        break;
+      default:
+        break;
+    }
+
+    // Add breadcrumb schema if provided
+    if (breadcrumbs.length > 0) {
+      schemas.push(generateBreadcrumbSchema(breadcrumbs));
+    }
+
+    // Add FAQ schema if provided
+    if (faqs.length > 0) {
+      schemas.push(generateFAQSchema(faqs));
+    }
+
+    return schemas;
+  };
+
+  const schemas = getSchemas();
+
+  return (
+    <Helmet>
+      {schemas.map((schema, index) => (
+        <script key={index} type="application/ld+json">
+          {JSON.stringify(schema)}
+        </script>
+      ))}
+    </Helmet>
+  );
+};
+
+export default StructuredData;
