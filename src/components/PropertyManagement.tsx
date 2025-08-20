@@ -14,6 +14,7 @@ const PropertyManagement = () => {
   const { toast } = useToast();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [formData, setFormData] = useState({
@@ -120,7 +121,7 @@ const PropertyManagement = () => {
   };
 
   const handleDelete = async (propertyId: string) => {
-    setLoading(true);
+    setDeleteLoading(propertyId);
     try {
       const result = await databaseAPI.deleteProperty(propertyId);
       
@@ -129,7 +130,8 @@ const PropertyManagement = () => {
           title: "Success",
           description: "Property deleted successfully"
         });
-        fetchProperties();
+        // Update properties list immediately without refetching
+        setProperties(prev => prev.filter(p => p.id !== propertyId));
       } else {
         throw new Error('Delete failed');
       }
@@ -137,11 +139,11 @@ const PropertyManagement = () => {
       console.error('Error deleting property:', error);
       toast({
         title: "Error",
-        description: "Failed to delete property",
+        description: "Failed to delete property. Please check your permissions and try again.",
         variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      setDeleteLoading(null);
     }
   };
 
@@ -252,9 +254,17 @@ const PropertyManagement = () => {
                             </AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() => handleDelete(property.id)}
-                              className="bg-red-500 hover:bg-red-600"
+                              disabled={deleteLoading === property.id}
+                              className="bg-red-500 hover:bg-red-600 disabled:opacity-50"
                             >
-                              Delete
+                              {deleteLoading === property.id ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                  Deleting...
+                                </>
+                              ) : (
+                                'Delete'
+                              )}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
