@@ -36,6 +36,7 @@ const AdminDashboard = () => {
   const isMobile = useIsMobile();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshLoading, setRefreshLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [user, setUser] = useState<User | null>(null);
 
@@ -157,13 +158,18 @@ const AdminDashboard = () => {
     }
   };
 
-  const handlePropertyAdded = () => {
-    fetchAnalyticsData(); // Refresh data after adding property
-    setActiveTab('overview'); // Switch back to overview
-    toast({
-      title: "Success",
-      description: "Property added successfully and analytics refreshed",
-    });
+  const handlePropertyAdded = async () => {
+    setRefreshLoading(true);
+    try {
+      await fetchAnalyticsData(); // Refresh data after adding property
+      setActiveTab('overview'); // Switch back to overview
+      toast({
+        title: "Success",
+        description: "Property added successfully and analytics refreshed",
+      });
+    } finally {
+      setRefreshLoading(false);
+    }
   };
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
@@ -265,7 +271,30 @@ const AdminDashboard = () => {
             </TabsList>
           )}
 
-          <TabsContent value="overview" className="space-y-6">
+            <TabsContent value="overview" className="space-y-6">
+              {/* Refresh Button */}
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold text-white">Analytics Overview</h2>
+                <Button
+                  onClick={() => {
+                    setRefreshLoading(true);
+                    fetchAnalyticsData().finally(() => setRefreshLoading(false));
+                  }}
+                  disabled={refreshLoading}
+                  variant="outline"
+                  size="sm"
+                  className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-white"
+                >
+                  {refreshLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                      Refreshing...
+                    </>
+                  ) : (
+                    'Refresh Data'
+                  )}
+                </Button>
+              </div>
             {/* Key Metrics - Responsive Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
               <Card className="bg-slate-800/50 border-cyan-500/20">
