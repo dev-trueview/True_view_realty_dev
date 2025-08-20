@@ -158,7 +158,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [isAdmin]); // Include isAdmin in dependency array for token refresh handling
+  }, []); // Include isAdmin in dependency array for token refresh handling
 
   const handleLoginSuccess = () => {
     setShowLoginModal(false);
